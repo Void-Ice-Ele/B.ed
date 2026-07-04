@@ -1,0 +1,1854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>B.Ed College — Fee Management System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --pri:#1B3A6B;--pri-l:#2a5298;--pri-d:#0f2340;
+  --acc:#F5A623;--acc-d:#d4891a;--seal:#9c7a2e;
+  --ok:#059669;--ok-bg:#d1fae5;
+  --err:#DC2626;--err-bg:#fee2e2;
+  --warn:#D97706;--warn-bg:#fef3c7;
+  --inf:#0284c7;--inf-bg:#e0f2fe;
+  --bg:#F1F5F9;--card:#fff;--text:#1E293B;--muted:#64748B;--bdr:#E2E8F0;
+  --sw:240px;--sh:60px;--r:8px;
+  --sh1:0 1px 3px rgba(0,0,0,.1),0 1px 2px rgba(0,0,0,.06);
+  --sh2:0 4px 6px rgba(0,0,0,.1),0 2px 4px rgba(0,0,0,.06);
+  --sh3:0 10px 15px rgba(0,0,0,.1),0 4px 6px rgba(0,0,0,.05);
+  --serif:'Lora',Georgia,serif;--sans:'Inter',system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:14px;scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-variant-numeric:tabular-nums}
+.brand{font-family:var(--serif)}
+svg.ic{flex-shrink:0;vertical-align:middle}
+
+/* ── BOOT LOADER ── */
+#boot-loader{position:fixed;inset:0;background:linear-gradient(135deg,var(--pri-d) 0%,var(--pri) 55%,var(--pri-l) 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;color:#fff;gap:14px}
+.spinner{width:38px;height:38px;border:3px solid rgba(255,255,255,.25);border-top-color:var(--acc);border-radius:50%;animation:spin .8s linear infinite}
+.spinner-sm{width:15px;height:15px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+.spinner-sm.dk{border:2px solid rgba(27,58,107,.2);border-top-color:var(--pri)}
+@keyframes spin{to{transform:rotate(360deg)}}
+#boot-loader p{font-size:.82rem;opacity:.85;letter-spacing:.02em}
+
+/* ── LOGIN ── */
+#login-page{display:none;min-height:100vh;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--pri-d) 0%,var(--pri) 55%,var(--pri-l) 100%);position:relative;overflow:hidden}
+#login-page::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,rgba(255,255,255,.06) 1px,transparent 1px);background-size:26px 26px;pointer-events:none}
+.lc{background:#fff;border-radius:16px;padding:40px 38px;width:400px;max-width:92vw;box-shadow:0 25px 60px rgba(0,0,0,.4);position:relative;z-index:1}
+.lc-logo{text-align:center;margin-bottom:26px}
+.monogram{width:64px;height:64px;background:linear-gradient(135deg,var(--pri),var(--pri-l));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700;font-family:var(--serif);color:#fff;margin:0 auto 14px;box-shadow:0 6px 16px rgba(27,58,107,.35);border:3px solid var(--acc)}
+.lc h1{font-size:1.35rem;font-weight:700;color:var(--pri);font-family:var(--serif)}
+.lc .gold-rule{width:36px;height:3px;background:var(--acc);border-radius:2px;margin:8px auto}
+.lc p{color:var(--muted);font-size:.78rem}
+
+/* ── APP LAYOUT ── */
+#app{display:none;min-height:100vh}
+.sidebar{position:fixed;top:0;left:0;width:var(--sw);height:100vh;background:var(--pri-d);color:#fff;display:flex;flex-direction:column;z-index:100;overflow-y:auto;transition:transform .3s}
+.sb-hd{padding:18px 14px;border-bottom:1px solid rgba(255,255,255,.1)}
+.sb-logo{display:flex;align-items:center;gap:10px}
+.sb-icon{width:38px;height:38px;background:var(--acc);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700;font-family:var(--serif);color:var(--pri-d);flex-shrink:0}
+.sb-text h2{font-size:.85rem;font-weight:700;color:#fff;line-height:1.2;font-family:var(--serif)}
+.sb-text p{font-size:.66rem;color:rgba(255,255,255,.5);margin-top:2px}
+.sb-nav{flex:1;padding:12px 8px}
+.nav-sec{font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.32);padding:12px 12px 4px;margin-top:6px}
+.ni{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:6px;cursor:pointer;color:rgba(255,255,255,.72);font-size:.84rem;font-weight:500;transition:all .15s;margin:1px 0}
+.ni:hover{background:rgba(255,255,255,.08);color:#fff}
+.ni.active{background:var(--acc);color:var(--pri-d);font-weight:700}
+.ni svg{flex-shrink:0}
+.sb-ft{padding:14px;border-top:1px solid rgba(255,255,255,.1)}
+.u-row{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+.uav{width:33px;height:33px;border-radius:50%;background:var(--acc);display:flex;align-items:center;justify-content:center;color:var(--pri-d);font-weight:700;font-size:.84rem;flex-shrink:0}
+.um strong{display:block;font-size:.78rem;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
+.um span{font-size:.68rem;color:rgba(255,255,255,.5);text-transform:capitalize}
+.btn-out{width:100%;padding:8px;background:rgba(255,255,255,.08);border:none;border-radius:6px;color:rgba(255,255,255,.72);cursor:pointer;font-size:.78rem;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s;font-family:inherit}
+.btn-out:hover{background:rgba(220,38,38,.3);color:#fca5a5}
+
+.main{margin-left:var(--sw);min-height:100vh;display:flex;flex-direction:column}
+.topbar{height:var(--sh);background:#fff;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;padding:0 22px;position:sticky;top:0;z-index:50}
+.topbar h1{font-size:1.05rem;font-weight:700;font-family:var(--serif)}
+.sess-badge{background:var(--inf-bg);color:var(--inf);padding:4px 12px;border-radius:20px;font-size:.76rem;font-weight:700}
+.pc{flex:1;padding:22px;max-width:1200px;width:100%}
+
+/* ── CARDS ── */
+.card{background:#fff;border-radius:var(--r);box-shadow:var(--sh1);overflow:hidden}
+.ch{padding:14px 18px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.ct{font-size:.95rem;font-weight:700}
+.cb{padding:18px}
+
+/* ── STAT CARDS ── */
+.sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:20px}
+.sc{background:#fff;border-radius:var(--r);padding:18px;box-shadow:var(--sh1);border-left:4px solid transparent;display:flex;align-items:center;gap:14px;transition:transform .15s,box-shadow .15s}
+.sc:hover{transform:translateY(-2px);box-shadow:var(--sh2)}
+.sc.bl{border-left-color:var(--pri)}.sc.gn{border-left-color:var(--ok)}.sc.or{border-left-color:var(--warn)}.sc.rd{border-left-color:var(--err)}.sc.ac{border-left-color:var(--acc)}
+.si{width:46px;height:46px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sc.bl .si{background:rgba(27,58,107,.1);color:var(--pri)}.sc.gn .si{background:rgba(5,150,105,.1);color:var(--ok)}.sc.or .si{background:rgba(217,119,6,.1);color:var(--warn)}.sc.rd .si{background:rgba(220,38,38,.1);color:var(--err)}.sc.ac .si{background:rgba(245,166,35,.15);color:var(--acc-d)}
+.sv{font-size:1.4rem;font-weight:800;color:var(--text)}.sl{font-size:.75rem;color:var(--muted);margin-top:2px}
+
+/* ── TABLES ── */
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{background:var(--bg);padding:9px 13px;text-align:left;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid var(--bdr);white-space:nowrap}
+td{padding:11px 13px;border-bottom:1px solid var(--bdr);font-size:.84rem;color:var(--text);vertical-align:middle}
+tr:hover td{background:#f8fafc}
+tr:last-child td{border-bottom:none}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:.7rem;font-weight:700;white-space:nowrap}
+.b-ok{background:var(--ok-bg);color:#065f46}.b-err{background:var(--err-bg);color:#991b1b}
+.b-warn{background:var(--warn-bg);color:#92400e}.b-inf{background:var(--inf-bg);color:#075985}
+.b-pri{background:rgba(27,58,107,.1);color:var(--pri)}.b-gray{background:#f1f5f9;color:var(--muted)}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:7px 14px;border-radius:6px;font-size:.84rem;font-weight:600;cursor:pointer;border:none;text-decoration:none;transition:all .15s;white-space:nowrap;font-family:inherit}
+.bp{background:var(--pri);color:#fff}.bp:hover{background:var(--pri-l)}
+.ba{background:var(--acc);color:var(--pri-d)}.ba:hover{background:var(--acc-d)}
+.bg{background:var(--ok);color:#fff}.bg:hover{opacity:.9}
+.br{background:var(--err);color:#fff}.br:hover{opacity:.9}
+.bo{background:transparent;color:var(--text);border:1.5px solid var(--bdr)}.bo:hover{background:var(--bg)}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+.btn-sm{padding:5px 9px;font-size:.76rem}
+.btn-xs{padding:3px 7px;font-size:.7rem}
+.btn-icon{padding:6px;width:31px;height:31px;flex-shrink:0}
+.iconbar{display:flex;gap:4px;flex-wrap:wrap}
+
+/* ── FORMS ── */
+.fg{margin-bottom:14px}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+label{display:block;font-size:.78rem;font-weight:700;color:var(--text);margin-bottom:5px}
+label.req::after{content:' *';color:var(--err)}
+input,select,textarea{width:100%;padding:8px 11px;border:1.5px solid var(--bdr);border-radius:6px;font-size:.84rem;color:var(--text);background:#fff;transition:border-color .15s;font-family:inherit}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--pri);box-shadow:0 0 0 3px rgba(27,58,107,.1)}
+input.err,select.err{border-color:var(--err);box-shadow:0 0 0 3px rgba(220,38,38,.08)}
+.emsg{font-size:.72rem;color:var(--err);margin-top:4px;display:flex;align-items:center;gap:4px}
+.hint{font-size:.72rem;color:var(--muted);margin-top:4px}
+textarea{resize:vertical;min-height:70px}
+.check-row{display:flex;align-items:center;gap:8px;cursor:pointer;padding:9px 12px;border:1.5px solid var(--bdr);border-radius:6px;transition:all .15s;font-size:.84rem;font-weight:500}
+.check-row input[type=radio]{width:auto;margin:0}
+.check-row.sel{border-color:var(--pri);background:rgba(27,58,107,.05);color:var(--pri)}
+
+/* ── MODALS ── */
+.mover{position:fixed;inset:0;background:rgba(15,23,64,.55);backdrop-filter:blur(3px);display:flex;align-items:flex-start;justify-content:center;z-index:1000;padding:16px;overflow-y:auto}
+.modal{background:#fff;border-radius:12px;width:100%;max-width:680px;margin:auto;box-shadow:0 25px 50px rgba(0,0,0,.3);animation:slin .2s ease}
+.modal-lg{max-width:860px}.modal-sm{max-width:430px}
+@keyframes slin{from{transform:translateY(-14px);opacity:0}to{transform:translateY(0);opacity:1}}
+.mh{padding:18px 22px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between}
+.mt{font-size:1.05rem;font-weight:700;display:flex;align-items:center;gap:8px}
+.mb2{padding:22px}
+.mf{padding:14px 22px;border-top:1px solid var(--bdr);display:flex;justify-content:flex-end;gap:9px}
+.bcl{background:none;border:none;font-size:1.1rem;cursor:pointer;color:var(--muted);padding:4px;border-radius:4px;transition:all .15s;display:flex}
+.bcl:hover{background:var(--bg);color:var(--text)}
+
+/* ── SEARCH BAR ── */
+.sinp{position:relative;flex:1;min-width:190px}
+.sinp input{padding-left:34px}
+.sico{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);display:flex}
+
+/* ── PHOTO ── */
+.phup{width:110px;height:140px;border:2px dashed var(--bdr);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;background:var(--bg);position:relative;transition:border-color .15s;color:var(--muted)}
+.phup img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+.phup:hover{border-color:var(--pri)}
+
+/* ── PROGRESS ── */
+.pbar{height:8px;background:var(--bdr);border-radius:4px;overflow:hidden}
+.pfill{height:100%;border-radius:4px;transition:width .6s ease}
+
+/* ── ALERTS ── */
+.alert{padding:11px 14px;border-radius:6px;font-size:.84rem;display:flex;align-items:flex-start;gap:9px;margin-bottom:14px;line-height:1.5}
+.a-warn{background:var(--warn-bg);color:#92400e;border:1px solid #fcd34d}
+.a-err{background:var(--err-bg);color:#991b1b;border:1px solid #fca5a5}
+.a-ok{background:var(--ok-bg);color:#065f46;border:1px solid #6ee7b7}
+.a-inf{background:var(--inf-bg);color:#075985;border:1px solid #7dd3fc}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:4px;background:var(--bg);padding:4px;border-radius:8px;margin-bottom:18px;overflow-x:auto}
+.tab{flex:1;min-width:fit-content;padding:7px 14px;background:none;border:none;border-radius:5px;cursor:pointer;font-size:.82rem;font-weight:500;color:var(--muted);transition:all .15s;white-space:nowrap;font-family:inherit;display:flex;align-items:center;gap:6px;justify-content:center}
+.tab.active{background:#fff;color:var(--pri);font-weight:700;box-shadow:var(--sh1)}
+
+/* ── COLLECTION BAR ── */
+.cbar{background:#fff;border-radius:var(--r);padding:18px 22px;box-shadow:var(--sh1);margin-bottom:20px}
+
+/* ── TOASTS ── */
+#toast-container{position:fixed;top:16px;right:16px;z-index:2000;display:flex;flex-direction:column;gap:8px;max-width:340px}
+.toast{background:#fff;box-shadow:var(--sh2);border-radius:8px;padding:11px 13px;display:flex;align-items:flex-start;gap:9px;font-size:.83rem;cursor:pointer;animation:toastIn .25s ease;border-left:4px solid var(--inf);line-height:1.4}
+.toast.t-ok{border-left-color:var(--ok)}.toast.t-error{border-left-color:var(--err)}.toast.t-warn{border-left-color:var(--warn)}.toast.t-info{border-left-color:var(--inf)}
+.toast .tic{flex-shrink:0;margin-top:1px}
+.toast.t-ok .tic{color:var(--ok)}.toast.t-error .tic{color:var(--err)}.toast.t-warn .tic{color:var(--warn)}.toast.t-info .tic{color:var(--inf)}
+@keyframes toastIn{from{transform:translateX(24px);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes toastOut{from{transform:translateX(0);opacity:1}to{transform:translateX(24px);opacity:0}}
+
+/* ── MISC ── */
+.empty{text-align:center;padding:44px 22px;color:var(--muted)}
+.empty .ei{margin-bottom:12px;display:flex;justify-content:center;color:var(--bdr)}
+.empty h3{font-size:.95rem;font-weight:600;color:var(--text)}
+.divider{border:none;border-top:1px solid var(--bdr);margin:14px 0}
+.tw-pri{color:var(--pri)}.tw-ok{color:var(--ok)}.tw-err{color:var(--err)}.tw-warn{color:var(--warn)}.tw-muted{color:var(--muted)}
+.fw7{font-weight:700}.fw8{font-weight:800}.fs-sm{font-size:.76rem}
+.d-flex{display:flex}.ai-c{align-items:center}.gap-2{gap:8px}.gap-3{gap:12px}.jb{justify-content:space-between}.je{justify-content:flex-end}
+.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px}
+.st{font-size:1.05rem;font-weight:700;font-family:var(--serif)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.av{width:36px;height:36px;border-radius:50%;background:rgba(27,58,107,.1);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--pri);font-size:.84rem;flex-shrink:0}
+.greet{font-family:var(--serif);font-size:1.3rem;font-weight:700;color:var(--text)}
+code.sqlbox,pre.sqlbox{display:block;background:#0f2340;color:#c9d8f0;padding:14px 16px;border-radius:8px;font-size:.74rem;line-height:1.65;overflow-x:auto;white-space:pre;font-family:'SF Mono',Consolas,monospace;max-height:280px;overflow-y:auto}
+.steplist{counter-reset:step;list-style:none}
+.steplist li{counter-increment:step;position:relative;padding-left:30px;margin-bottom:10px;font-size:.84rem;line-height:1.55}
+.steplist li::before{content:counter(step);position:absolute;left:0;top:0;width:20px;height:20px;background:var(--pri);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:700}
+
+/* ── PRINT ── */
+@media print{
+  body>*{display:none!important}
+  #pr-receipt{display:block!important;position:fixed;top:0;left:0;width:100%;background:#fff;padding:20px}
+  #pr-receipt *{visibility:visible!important}
+}
+#pr-receipt{display:none;padding:20px;font-family:var(--sans);background:#fff;color:#000}
+
+/* ── RECEIPT STYLES ── */
+.r-wrap{font-family:var(--sans);color:#1a1a1a;max-width:720px;margin:0 auto;background:#FFFDF9;border:1px solid #ddd0a8;border-radius:6px;padding:26px}
+.r-hd{text-align:center;border-bottom:3px solid #1B3A6B;padding-bottom:14px;margin-bottom:14px}
+.r-college{font-family:var(--serif);font-size:1.4rem;font-weight:700;color:#1B3A6B;text-transform:uppercase;letter-spacing:.03em}
+.r-sub{font-size:.78rem;color:#555;margin-top:2px}
+.r-title{background:#1B3A6B;color:#fff;text-align:center;padding:7px;font-weight:700;font-size:.88rem;letter-spacing:.12em;margin:12px 0;border-radius:3px}
+.r-meta{display:flex;justify-content:space-between;font-size:.82rem;background:#f8f5ec;padding:9px 13px;border-radius:6px;margin-bottom:12px}
+.r-table{width:100%;border-collapse:collapse;font-size:.82rem;margin-bottom:12px}
+.r-table td{padding:5px 9px;border:1px solid #ddd}
+.r-table td:first-child{background:#f0f4f8;font-weight:600;width:35%}
+.r-amt{background:#f0f4f8;border:2px solid #1B3A6B;border-radius:7px;padding:13px;margin-bottom:14px;position:relative}
+.r-row{display:flex;justify-content:space-between;font-size:.82rem;padding:3px 0}
+.r-row.tot{border-top:2px solid #1B3A6B;margin-top:7px;padding-top:9px;font-size:1rem;font-weight:800;color:#1B3A6B}
+.r-row.bal{background:#fff;padding:7px;border-radius:4px;margin-top:6px;font-weight:700}
+.r-stamp{position:absolute;top:50%;right:16px;transform:rotate(-15deg) translateY(-50%);border:3px double #059669;color:#059669;font-size:1.2rem;font-weight:800;padding:5px 15px;border-radius:5px;opacity:.72;letter-spacing:.14em;font-family:var(--serif)}
+.r-words{text-align:center;font-size:.76rem;color:#555;font-style:italic;margin-top:7px}
+.r-sig{display:flex;justify-content:space-between;margin-top:28px;padding-top:14px;border-top:1px dashed #ccc;font-size:.76rem;text-align:center}
+.r-sig-line{border-top:1px solid #333;width:130px;padding-top:5px;margin:0 auto}
+.r-foot{text-align:center;font-size:.66rem;color:#aaa;margin-top:14px;border-top:1px dashed #ddd;padding-top:7px}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  :root{--sw:0px}
+  .sidebar{transform:translateX(-240px);width:240px}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0}
+  .fr,.fr3,.g2{grid-template-columns:1fr}
+  .sgrid{grid-template-columns:repeat(2,1fr)}
+  .mnu-btn{display:flex!important}
+  .pc{padding:14px}
+  .sess-badge{display:none}
+}
+@media(max-width:480px){
+  .sgrid{grid-template-columns:1fr}
+  .tabs{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<!-- ════════ BOOT LOADER ════════ -->
+<div id="boot-loader"><div class="spinner"></div><p>Loading your college data…</p></div>
+
+<!-- ════════ LOGIN ════════ -->
+<div id="login-page">
+  <div class="lc">
+    <div class="lc-logo">
+      <div class="monogram" id="lc-mono">B</div>
+      <h1 class="brand" id="lc-cname">B.Ed College</h1>
+      <div class="gold-rule"></div>
+      <p>Fee Management System</p>
+    </div>
+    <div id="lerr" class="alert a-err" style="display:none"></div>
+    <div id="setup-needed" class="alert a-warn" style="display:none"><span id="setup-needed-msg"></span></div>
+    <div id="login-fields">
+      <div class="fg"><label>Email</label><input type="email" id="lu" placeholder="you@example.com" autocomplete="email" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <div class="fg"><label>Password</label><input type="password" id="lp" placeholder="Enter password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button class="btn bp" style="width:100%;padding:11px;font-size:.95rem;margin-top:6px" id="login-btn" onclick="doLogin()">Login to System</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ PRINT RECEIPT (hidden) ════════ -->
+<div id="pr-receipt"></div>
+
+<!-- ════════ TOASTS ════════ -->
+<div id="toast-container"></div>
+
+<!-- ════════ APP ════════ -->
+<div id="app">
+  <nav class="sidebar" id="sidebar">
+    <div class="sb-hd">
+      <div class="sb-logo">
+        <div class="sb-icon" id="sb-logo-img">B</div>
+        <div class="sb-text">
+          <h2 id="sb-cname">B.Ed College</h2>
+          <p>Fee Management</p>
+        </div>
+      </div>
+    </div>
+    <div class="sb-nav">
+      <div class="ni active" onclick="nav('dash')" data-p="dash"></div>
+      <div class="ni" onclick="nav('students')" data-p="students"></div>
+      <div class="ni" onclick="nav('payments')" data-p="payments"></div>
+      <div class="ni" onclick="nav('receipts')" data-p="receipts"></div>
+      <div class="ni" onclick="nav('reports')" data-p="reports"></div>
+      <div class="nav-sec" id="admin-sec">Admin</div>
+      <div class="ni" onclick="nav('users')" data-p="users" id="nav-users"></div>
+      <div class="ni" onclick="nav('settings')" data-p="settings" id="nav-settings"></div>
+    </div>
+    <div class="sb-ft">
+      <div class="u-row">
+        <div class="uav" id="u-av">A</div>
+        <div class="um"><strong id="u-name">Admin</strong><span id="u-role">admin</span></div>
+      </div>
+      <button class="btn-out" onclick="showChangePwModal()" id="changepw-btn" style="display:none;margin-bottom:6px">Change Password</button>
+      <button class="btn-out" onclick="doLogout()" id="logout-btn">Logout</button>
+    </div>
+  </nav>
+
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="btn bo btn-icon mnu-btn" onclick="toggleSB()" style="display:none" id="mnu-btn"></button>
+        <h1 class="brand" id="page-title">Dashboard</h1>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="sess-badge" id="sess-badge">2024–25</div>
+      </div>
+    </div>
+    <div class="pc" id="pc"><!-- content --></div>
+  </div>
+</div>
+
+<!-- ════════ MODAL ════════ -->
+<div id="mcont"></div>
+
+<script>
+'use strict';
+// ══════════════════════════════════════════════════════════════
+// ICONS (inline SVG, stroke-based — no external icon font needed)
+// ══════════════════════════════════════════════════════════════
+const ICON_PATHS={
+  grid:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
+  users:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  user:'<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  card:'<rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>',
+  receipt:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>',
+  chart:'<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>',
+  settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+  search:'<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+  plus:'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+  edit:'<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>',
+  trash:'<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>',
+  x:'<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+  check:'<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
+  alert:'<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+  calendar:'<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+  logout:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>',
+  upload:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
+  download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+  eye:'<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
+  camera:'<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>',
+  database:'<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>',
+  bell:'<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
+  lock:'<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  menu:'<line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>',
+  arrowRight:'<line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>',
+  copy:'<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+  refresh:'<polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>',
+  wallet:'<path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/>'
+};
+function icon(name,size,strokeW){
+  size=size||18;strokeW=strokeW||2;
+  const p=ICON_PATHS[name]||'';
+  return `<svg class="ic" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${strokeW}" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+}
+
+// ══════════════════════════════════════════════════════════════
+// CONSTANTS
+// ══════════════════════════════════════════════════════════════
+const CATS=['General','OBC','SC','ST','EWS','Minority','Other'];
+const COURSES=['B.Ed','D.El.Ed','B.Ed (Special)','M.Ed'];
+const YEARS=['1st Year','2nd Year'];
+const SEMS=['1st Semester','2nd Semester','3rd Semester','4th Semester'];
+const FHEADS=['Admission Fee','Tuition Fee','Exam Fee','Library Fee','Hostel Fee','Development Fee','Sports Fee','Other'];
+const PMODES=['Cash','UPI','Bank Transfer','Cheque'];
+const INSTS=['1st Installment','2nd Installment','3rd Installment','4th Installment','Full Payment','Partial Payment','Other'];
+const STATUSES=['Active','Passed','Left'];
+const SESSIONS=(()=>{const a=[];for(let y=2018;y<=2032;y++)a.push(`${y}-${y+1}`);return a;})();
+
+// ══════════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════════
+const S={
+  user:null,page:'dash',
+  sSrch:'',sStatus:'all',sSess:'all',
+  pSrch:'',pMode:'all',pSess:'',pFrom:'',pTo:'',
+  recSrch:'',
+  rTab:'monthly',
+  ledSid:'',
+  prefSid:null,
+  editSid:null,
+  viewSid:null,
+  photoB64:null,
+  logoB64:null
+};
+
+// ══════════════════════════════════════════════════════════════
+// CONFIGURATION — fill in your Supabase project's values here ONCE
+// (Project Settings → API Keys in your Supabase dashboard), then this
+// same file works automatically on every device — nobody else needs
+// to configure anything.
+// ══════════════════════════════════════════════════════════════
+const SUPABASE_URL='https://ofxyirtndxrbramngluq.supabase.co';
+const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9meHlpcnRuZHhyYnJhbW5nbHVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwNDU0OTYsImV4cCI6MjA5ODYyMTQ5Nn0.C5Cejrbb9ZBwZe0GbW-v9bk5mkTG1NgupvlKIbmdofA';
+
+function defaultSettings(){return{collegeName:'B.Ed College',address:'College Address, City, State - 000000',phone:'0000000000',email:'college@example.com',logo:null,currentSession:'2024-2025',affiliatedTo:'',regNo:''}}
+
+// ══════════════════════════════════════════════════════════════
+// IN-MEMORY DATA CACHE — the single source of truth for rendering,
+// loaded fresh from Supabase right after login
+// ══════════════════════════════════════════════════════════════
+const DB={students:[],payments:[],users:[],settings:null,log:[]};
+const gSt=()=>DB.students;
+const gPy=()=>DB.payments;
+const gUs=()=>DB.users;
+const gSe=()=>DB.settings||defaultSettings();
+const gLog=()=>DB.log;
+
+// ══════════════════════════════════════════════════════════════
+// SUPABASE LAYER
+// ══════════════════════════════════════════════════════════════
+let sbClient=null,SB_READY=false,SB_LAST_ERROR='';
+
+const STU_MAP={id:'id',admissionNo:'admission_no',name:'name',fatherName:'father_name',motherName:'mother_name',mobile:'mobile',altMobile:'alt_mobile',address:'address',course:'course',session:'session',year:'year',semester:'semester',category:'category',dateOfAdmission:'date_of_admission',dob:'dob',status:'status',totalFees:'total_fees',scholarship:'scholarship',discount:'discount',remarks:'remarks',photo:'photo',createdAt:'created_at'};
+const PAY_MAP={id:'id',receiptNo:'receipt_no',studentId:'student_id',studentName:'student_name',paymentDate:'payment_date',amount:'amount',feeHead:'fee_head',installment:'installment',paymentMode:'payment_mode',transactionId:'transaction_id',toWhom:'to_whom',changeReturned:'change_returned',collectedBy:'collected_by',session:'session',remarks:'remarks',createdAt:'created_at',createdBy:'created_by'};
+const PROFILE_MAP={id:'id',username:'username',name:'name',role:'role',approved:'approved',created:'created_at'};
+const SET_MAP={collegeName:'college_name',address:'address',phone:'phone',email:'email',logo:'logo',currentSession:'current_session',affiliatedTo:'affiliated_to',regNo:'reg_no'};
+const LOG_MAP={id:'id',action:'action',det:'details',by:'by_user',ts:'ts'};
+
+const j2d=(obj,map)=>{const o={};for(const k in map){if(obj[k]!==undefined)o[map[k]]=obj[k]}return o};
+const d2j=(row,map)=>{const o={};for(const k in map){o[k]=row[map[k]]}return o};
+const toSbStudent=o=>j2d(o,STU_MAP), fromSbStudent=r=>d2j(r,STU_MAP);
+const toSbPayment=o=>j2d(o,PAY_MAP), fromSbPayment=r=>d2j(r,PAY_MAP);
+const toSbProfile=o=>j2d(o,PROFILE_MAP), fromSbProfile=r=>d2j(r,PROFILE_MAP);
+const toSbSettings=o=>j2d(o,SET_MAP), fromSbSettings=r=>d2j(r,SET_MAP);
+const toSbLog=o=>j2d(o,LOG_MAP), fromSbLog=r=>d2j(r,LOG_MAP);
+
+function friendlySbError(err){
+  const msg=(err&&err.message)||'Unknown error';const code=err&&err.code;
+  if(code==='42P01'||/does not exist/i.test(msg))return 'Required tables were not found. Please run the setup SQL in your Supabase project (see below).';
+  if(code==='42501'||/permission denied|RLS|row-level/i.test(msg))return 'Permission denied by the database. Please re-run the setup SQL — it includes the required access grants.';
+  if(/Invalid API key|JWT|apikey/i.test(msg))return 'Invalid API key. Please double-check your anon/public key.';
+  if(/fetch|network|Failed to fetch|NetworkError/i.test(msg))return 'Could not reach Supabase. Check your Project URL and internet connection.';
+  if(/Invalid login credentials/i.test(msg))return 'Invalid username or password.';
+  if(/already registered|already exists/i.test(msg))return 'That username is already taken.';
+  if(/confirm/i.test(msg))return 'Blocked by email confirmation. In Supabase go to Authentication → Providers → Email and turn OFF "Confirm email", then try again.';
+  return msg;
+}
+
+async function tryInitSupabase(){
+  try{
+    if(typeof supabase==='undefined'){SB_READY=false;SB_LAST_ERROR='The Supabase library did not load. Check your internet connection.';return false}
+    sbClient=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+    // Pre-login-safe check only: confirms the SDK can reach this URL/key via the Auth
+    // endpoint. It deliberately does NOT query table data — signed-out requests have
+    // zero table access by design, so that's only verified once someone signs in.
+    const{error}=await sbClient.auth.getSession();
+    if(error)throw error;
+    SB_READY=true;return true;
+  }catch(err){
+    console.error('Supabase connect failed',err);
+    SB_LAST_ERROR=friendlySbError(err);SB_READY=false;sbClient=null;return false;
+  }
+}
+
+// Loads business data. Must only run once truly authenticated — RLS returns nothing
+// at all otherwise, by design.
+async function loadAllData(){
+  try{
+    const[stR,pyR,seR,lgR,puR]=await Promise.all([
+      sbClient.from('students').select('*'),
+      sbClient.from('payments').select('*'),
+      sbClient.from('app_settings').select('*').eq('id',1).maybeSingle(),
+      sbClient.from('audit_log').select('*').order('ts',{ascending:false}).limit(500),
+      sbClient.from('profiles').select('*')
+    ]);
+    if(stR.error)throw stR.error;if(pyR.error)throw pyR.error;
+    DB.students=(stR.data||[]).map(fromSbStudent);
+    DB.payments=(pyR.data||[]).map(fromSbPayment);
+    DB.settings=seR.data?fromSbSettings(seR.data):null;
+    DB.log=(lgR.error?[]:(lgR.data||[])).map(fromSbLog);
+    DB.users=(puR.error?[]:(puR.data||[])).map(fromSbProfile);
+    if(!DB.settings){DB.settings=defaultSettings();try{await dbSaveSettings(DB.settings)}catch(e){}}
+  }catch(err){
+    console.error(err);SB_LAST_ERROR=friendlySbError(err);
+    showToast('Could not load your data: '+friendlySbError(err),'error',6000);
+  }
+}
+
+// ── CRUD wrappers: every mutation goes straight to Supabase, then updates the in-memory cache ──
+async function dbAddStudent(obj){
+  const{error}=await sbClient.from('students').insert(toSbStudent(obj));if(error)throw error;
+  DB.students.push(obj);
+}
+async function dbUpdateStudent(id,obj){
+  const{error}=await sbClient.from('students').update(toSbStudent(obj)).eq('id',id);if(error)throw error;
+  const i=DB.students.findIndex(s=>s.id===id);if(i>-1)DB.students[i]=obj;
+}
+async function dbDeleteStudent(id){
+  await sbClient.from('payments').delete().eq('student_id',id);
+  const{error}=await sbClient.from('students').delete().eq('id',id);if(error)throw error;
+  DB.students=DB.students.filter(s=>s.id!==id);DB.payments=DB.payments.filter(p=>p.studentId!==id);
+}
+async function dbBulkAddStudents(arr){
+  if(!arr||!arr.length)return;
+  const{error}=await sbClient.from('students').insert(arr.map(toSbStudent));if(error)throw error;
+  DB.students=[...DB.students,...arr];
+}
+async function dbAddPayment(obj){
+  const{error}=await sbClient.from('payments').insert(toSbPayment(obj));if(error)throw error;
+  DB.payments.push(obj);
+}
+async function dbDeletePayment(id){
+  const{error}=await sbClient.from('payments').delete().eq('id',id);if(error)throw error;
+  DB.payments=DB.payments.filter(p=>p.id!==id);
+}
+async function dbSaveSettings(obj){
+  const row=Object.assign({id:1},toSbSettings(obj));
+  const{error}=await sbClient.from('app_settings').upsert(row,{onConflict:'id'});if(error)throw error;
+  DB.settings=obj;
+}
+async function dbAddLog(entry){
+  try{await sbClient.from('audit_log').insert(toSbLog(entry))}catch(e){/* non-critical */}
+  DB.log.unshift(entry);DB.log=DB.log.slice(0,500);
+}
+async function bulkUpsert(table,rows,map){
+  if(!rows||!rows.length)return;
+  const{error}=await sbClient.from(table).upsert(rows.map(r=>j2d(r,map)),{onConflict:'id'});
+  if(error)throw error;
+}
+
+function addLog(action,det){
+  const entry={id:'LOG'+Date.now()+Math.random().toString(36).slice(2,6),action,det,by:(S.user&&S.user.name)||'?',ts:new Date().toISOString()};
+  dbAddLog(entry);
+}
+
+// ── Real accounts (cloud mode only) — every mutation here is also re-checked by RLS ──
+async function dbApproveUser(id){
+  const{error}=await sbClient.from('profiles').update({approved:true}).eq('id',id);if(error)throw error;
+  const i=DB.users.findIndex(u=>u.id===id);if(i>-1)DB.users[i].approved=true;
+}
+async function dbUpdateUserRole(id,role){
+  const{error}=await sbClient.from('profiles').update({role}).eq('id',id);if(error)throw error;
+  const i=DB.users.findIndex(u=>u.id===id);if(i>-1)DB.users[i].role=role;
+}
+async function dbUpdateUserName(id,name){
+  const{error}=await sbClient.from('profiles').update({name}).eq('id',id);if(error)throw error;
+  const i=DB.users.findIndex(u=>u.id===id);if(i>-1)DB.users[i].name=name;
+}
+async function dbDeleteUser(id){
+  const{error}=await sbClient.from('profiles').delete().eq('id',id);if(error)throw error;
+  DB.users=DB.users.filter(u=>u.id!==id);
+}
+// Accounts are created directly in Supabase (Authentication -> Users), not by this app.
+// The first time that person successfully signs in here, we create their profile row —
+// the database trigger decides admin-vs-staff (first ever = admin, everyone else starts
+// as unapproved staff until a real admin approves them on the Users page).
+async function createOwnProfileIfMissing(email,uid){
+  let username=(email.split('@')[0]||'user').toLowerCase().replace(/[^a-z0-9._-]/g,'').slice(0,28)||'user';
+  let{error}=await sbClient.from('profiles').insert({id:uid,username,name:username,role:'staff'});
+  if(error&&/unique|duplicate/i.test(error.message||'')){
+    username=username+uid.slice(0,4);
+    ({error}=await sbClient.from('profiles').insert({id:uid,username,name:username,role:'staff'}));
+  }
+  if(error)console.error('profile auto-create failed',error);
+}
+async function fetchOwnProfile(){
+  const{data:sess}=await sbClient.auth.getSession();
+  const uid=sess&&sess.session&&sess.session.user&&sess.session.user.id;
+  if(!uid)return null;
+  const{data,error}=await sbClient.from('profiles').select('*').eq('id',uid).maybeSingle();
+  if(error||!data)return null;
+  return fromSbProfile(data);
+}
+async function changeOwnPassword(newPw){
+  const{error}=await sbClient.auth.updateUser({password:newPw});
+  if(error)throw error;
+}
+
+// ══════════════════════════════════════════════════════════════
+// ID GENERATION — derived from current data, collision-checked at save time
+// ══════════════════════════════════════════════════════════════
+function seqFromIds(ids,prefix){
+  let max=0;
+  ids.forEach(id=>{
+    if(typeof id==='string'&&id.startsWith(prefix)){
+      const n=parseInt(id.slice(prefix.length),10);
+      if(!isNaN(n)&&n>max)max=n;
+    }
+  });
+  return max+1;
+}
+function autoSid(){
+  const se=gSe();const yr=(se.currentSession||'2024-2025').split('-')[0].slice(-2);const prefix='STU'+yr;
+  return prefix+String(seqFromIds(gSt().map(s=>s.id),prefix)).padStart(3,'0');
+}
+function nextRcp(){
+  const se=gSe();const yr=(se.currentSession||'2024-2025').replace('-','').slice(-4);const prefix='RCP'+yr;
+  return prefix+String(seqFromIds(gPy().map(p=>p.receiptNo),prefix)).padStart(4,'0');
+}
+function nextId(pfx){
+  let ids=[];
+  if(pfx==='STU')ids=gSt().map(s=>s.id);else if(pfx==='PAY')ids=gPy().map(p=>p.id);else if(pfx==='USR')ids=gUs().map(u=>u.id);
+  return pfx+String(seqFromIds(ids,pfx)).padStart(4,'0');
+}
+
+// ══════════════════════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════════════════════
+const fmtD=d=>{if(!d)return'-';const dt=new Date(d);if(isNaN(dt))return d;return dt.toLocaleDateString('en-IN',{day:'2-digit',month:'2-digit',year:'numeric'})};
+const fmtDT=d=>{if(!d)return'-';const dt=new Date(d);if(isNaN(dt))return d;return dt.toLocaleString('en-IN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})};
+const fmtC=n=>'₹'+(parseFloat(n)||0).toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:2});
+const today=()=>new Date().toISOString().split('T')[0];
+const e=id=>document.getElementById(id);
+const esc=s=>(s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function greeting(){const h=new Date().getHours();return h<12?'Good morning':h<17?'Good afternoon':'Good evening'}
+
+const n2w=n=>{const ones=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];const tens=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];const cv=n=>{if(n<20)return ones[n];if(n<100)return tens[Math.floor(n/10)]+(n%10?' '+ones[n%10]:'');if(n<1000)return ones[Math.floor(n/100)]+' Hundred'+(n%100?' '+cv(n%100):'');if(n<100000)return cv(Math.floor(n/1000))+' Thousand'+(n%1000?' '+cv(n%1000):'');if(n<10000000)return cv(Math.floor(n/100000))+' Lakh'+(n%100000?' '+cv(n%100000):'');return cv(Math.floor(n/10000000))+' Crore'+(n%10000000?' '+cv(n%10000000):'')};const num=Math.floor(parseFloat(n)||0);return num===0?'Zero Rupees Only':cv(num)+' Rupees Only'};
+
+const netFees=st=>Math.max(0,(parseFloat(st.totalFees)||0)-(parseFloat(st.scholarship)||0)-(parseFloat(st.discount)||0));
+const paidTotal=(sid,sess)=>gPy().filter(p=>p.studentId===sid&&(!sess||p.session===sess)).reduce((s,p)=>s+(parseFloat(p.amount)||0),0);
+const balance=sid=>{const st=gSt().find(s=>s.id===sid);if(!st)return 0;return Math.max(0,netFees(st)-paidTotal(sid))};
+const txnUsed=(txn,excl)=>{if(!txn||!txn.trim())return false;return gPy().some(p=>p.id!==excl&&p.transactionId&&p.transactionId.toLowerCase()===txn.trim().toLowerCase())};
+
+const avatarEl=st=>{if(st.photo)return`<img src="${st.photo}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0">`;const ini=(st.name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);return`<div class="av">${ini}</div>`};
+
+const csvDl=(rows,fname)=>{const csv=rows.map(r=>r.map(c=>`"${(c||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');const b=new Blob([csv],{type:'text/csv'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=fname;a.click();URL.revokeObjectURL(u)};
+
+// ══════════════════════════════════════════════════════════════
+// TOASTS & CONFIRM MODAL (replace alert()/confirm())
+// ══════════════════════════════════════════════════════════════
+function showToast(msg,type,duration){
+  type=type||'info';duration=duration||3800;
+  const id='t'+Date.now()+Math.random().toString(36).slice(2,6);
+  const ic={ok:'check',error:'x',warn:'alert',info:'bell'}[type]||'bell';
+  const el=document.createElement('div');el.id=id;el.className='toast t-'+type;
+  el.innerHTML=`<span class="tic">${icon(ic,16)}</span><span style="flex:1">${esc(msg)}</span>`;
+  el.onclick=()=>dismissToast(id);
+  const cont=e('toast-container');if(cont){cont.appendChild(el);setTimeout(()=>dismissToast(id),duration)}
+}
+function dismissToast(id){const el=document.getElementById(id);if(!el)return;el.style.animation='toastOut .2s ease forwards';setTimeout(()=>el.remove(),200)}
+
+function askConfirm(opts){
+  opts=opts||{};
+  return new Promise(resolve=>{
+    const danger=opts.danger;
+    showModal('confirm-modal',`
+      <div class="mh"><span class="mt">${danger?icon('alert',18):''}${esc(opts.title||'Please Confirm')}</span></div>
+      <div class="mb2"><p style="font-size:.88rem;line-height:1.6;white-space:pre-line">${esc(opts.message||'')}</p>
+        ${opts.requireText?`<div class="fg" style="margin-top:14px"><label>Type <strong>${esc(opts.requireText)}</strong> to confirm</label><input type="text" id="confirm-inp" placeholder="Type here..."></div>`:''}
+      </div>
+      <div class="mf">
+        <button class="btn bo" id="confirm-cancel">${esc(opts.cancelLabel||'Cancel')}</button>
+        <button class="btn ${danger?'br':'bp'}" id="confirm-ok">${esc(opts.confirmLabel||'Confirm')}</button>
+      </div>`,'modal-sm');
+    e('confirm-cancel').onclick=()=>{closeM();resolve(false)};
+    e('confirm-ok').onclick=()=>{
+      if(opts.requireText){
+        const v=(e('confirm-inp').value||'').trim();
+        if(v!==opts.requireText){showToast('Text did not match — cancelled for safety.','error');closeM();resolve(false);return}
+      }
+      closeM();resolve(true);
+    };
+  });
+}
+
+function setBusy(btnId,busy,busyLabel){
+  const b=e(btnId);if(!b)return;
+  if(busy){b.dataset.orig=b.innerHTML;b.disabled=true;b.innerHTML=`<span class="spinner-sm"></span> ${esc(busyLabel||'Saving...')}`}
+  else{b.disabled=false;if(b.dataset.orig)b.innerHTML=b.dataset.orig}
+}
+
+// ══════════════════════════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════════════════════════
+async function doLogin(){
+  const u=e('lu').value.trim(),p=e('lp').value;const er=e('lerr');
+  er.style.display='none';
+  if(!u||!p){er.textContent='Please enter your email and password.';er.style.display='flex';return}
+  setBusy('login-btn',true,'Logging in...');
+  try{
+    const{data:signInData,error}=await sbClient.auth.signInWithPassword({email:u,password:p});
+    if(error){er.textContent=friendlySbError(error);er.style.display='flex';setBusy('login-btn',false);return}
+    let prof=await fetchOwnProfile();
+    if(!prof){
+      // first time this Supabase-created account has ever logged in — set up its profile now
+      await createOwnProfileIfMissing(u,signInData.user.id);
+      prof=await fetchOwnProfile();
+    }
+    if(!prof){await sbClient.auth.signOut();er.textContent='Could not set up your account. Please re-run the setup SQL, then try again.';er.style.display='flex';setBusy('login-btn',false);return}
+    if(!prof.approved){await sbClient.auth.signOut();er.textContent='Your account is set up but still waiting for an administrator to approve it from the Users page.';er.style.display='flex';setBusy('login-btn',false);return}
+    S.user=prof;
+    await loadAllData();
+    addLog('LOGIN',`${prof.name} logged in`);
+    setBusy('login-btn',false);
+    showApp();
+  }catch(err){
+    setBusy('login-btn',false);er.textContent=friendlySbError(err);er.style.display='flex';
+  }
+}
+
+async function doLogout(){
+  const ok=await askConfirm({title:'Logout',message:'Are you sure you want to logout?',confirmLabel:'Logout'});
+  if(!ok)return;
+  addLog('LOGOUT',`${S.user?S.user.name:''} logged out`);
+  if(sbClient)await sbClient.auth.signOut();
+  S.user=null;
+  e('app').style.display='none';e('login-page').style.display='flex';
+  e('lu').value='';e('lp').value='';e('lerr').style.display='none';
+}
+
+async function checkExistingSession(){
+  try{
+    const{data}=await sbClient.auth.getSession();
+    if(!data||!data.session)return false;
+    let prof=await fetchOwnProfile();
+    if(!prof){
+      await createOwnProfileIfMissing(data.session.user.email,data.session.user.id);
+      prof=await fetchOwnProfile();
+    }
+    if(!prof||!prof.approved){await sbClient.auth.signOut();return false}
+    S.user=prof;await loadAllData();return true;
+  }catch(err){console.error(err);return false}
+}
+
+function showApp(){
+  e('login-page').style.display='none';e('app').style.display='block';
+  const u=S.user;
+  e('u-av').textContent=u.name.charAt(0).toUpperCase();
+  e('u-name').textContent=u.name;e('u-role').textContent=u.role;
+  const isAdmin=u.role==='admin';
+  e('nav-users').style.display=isAdmin?'flex':'none';
+  e('nav-settings').style.display=isAdmin?'flex':'none';
+  e('admin-sec').style.display=isAdmin?'block':'none';
+  e('changepw-btn').style.display='flex';
+  const se=gSe();
+  e('sb-cname').textContent=se.collegeName;e('lc-cname').textContent=se.collegeName;
+  const initial=(se.collegeName||'B').trim().charAt(0).toUpperCase();
+  e('sb-logo-img').textContent=initial;e('lc-mono').textContent=initial;
+  S.pSess=se.currentSession;
+  updateSessBadge();renderNavIcons();
+  nav('dash');
+}
+
+function updateSessBadge(){const se=gSe();e('sess-badge').textContent='Session: '+(se.currentSession||'').replace('-','\u2013')}
+
+function renderNavIcons(){
+  const map={dash:['grid','Dashboard'],students:['users','Students'],payments:['card','Payments'],receipts:['receipt','Receipts'],reports:['chart','Reports'],users:['user','Users'],settings:['settings','Settings']};
+  document.querySelectorAll('.ni').forEach(el=>{
+    const p=el.dataset.p;const m=map[p];if(m)el.innerHTML=icon(m[0],17)+'<span>'+m[1]+'</span>';
+  });
+  const lb=e('logout-btn');if(lb)lb.innerHTML=icon('logout',14)+' Logout';
+  const cb=e('changepw-btn');if(cb)cb.innerHTML=icon('lock',14)+' Change Password';
+  const mb=e('mnu-btn');if(mb)mb.innerHTML=icon('menu',18);
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════════════════
+const TITLES={dash:'Dashboard',students:'Students','add-student':'Add New Student','edit-student':'Edit Student','student-detail':'Student Profile',payments:'Payments','add-payment':'Add Payment',receipts:'Receipts',reports:'Reports',users:'User Management',settings:'Settings','bulk-upload':'Bulk Upload Students'};
+
+function nav(pg){
+  if((pg==='users'||pg==='settings')&&S.user&&S.user.role!=='admin')pg='dash';
+  S.page=pg;
+  document.querySelectorAll('.ni').forEach(el=>el.classList.toggle('active',el.dataset.p===pg||(pg==='add-student'&&el.dataset.p==='students')||(pg==='bulk-upload'&&el.dataset.p==='students')||(pg==='add-payment'&&el.dataset.p==='payments')||(pg==='edit-student'&&el.dataset.p==='students')||(pg==='student-detail'&&el.dataset.p==='students')));
+  e('page-title').textContent=TITLES[pg]||pg;
+  document.getElementById('sidebar').classList.remove('open');
+  e('pc').innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)"><span class="spinner-sm dk"></span> Loading...</div>';
+  setTimeout(()=>{
+    ({dash:rDash,students:rStudents,'add-student':()=>rAddStudent(),'edit-student':rEditStudent,'student-detail':rStudentDetail,payments:rPayments,'add-payment':()=>rAddPayment(),receipts:rReceipts,reports:rReports,users:rUsers,settings:rSettings,'bulk-upload':rBulkUpload}[pg]||rDash)();
+  },8);
+}
+function toggleSB(){document.getElementById('sidebar').classList.toggle('open')}
+
+// ══════════════════════════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════════════════════════
+function rDash(){
+  const se=gSe();const sess=se.currentSession;
+  const sts=gSt();const pys=gPy();
+  const sessSts=sts.filter(s=>s.session===sess);
+  const sessPys=pys.filter(p=>p.session===sess);
+  const totalF=sessSts.reduce((s,st)=>s+netFees(st),0);
+  const totalC=sessPys.reduce((s,p)=>s+(parseFloat(p.amount)||0),0);
+  const totalD=Math.max(0,totalF-totalC);
+  const todC=sessPys.filter(p=>p.paymentDate===today()).reduce((s,p)=>s+(parseFloat(p.amount)||0),0);
+  const withDues=sessSts.filter(s=>s.status==='Active'&&balance(s.id)>0);
+  const pct=totalF>0?Math.min(100,Math.round(totalC/totalF*100)):0;
+  const recent=pys.filter(p=>p.session===sess).sort((a,b)=>new Date(b.createdAt||b.paymentDate)-new Date(a.createdAt||a.paymentDate)).slice(0,8);
+  const topDues=withDues.sort((a,b)=>balance(b.id)-balance(a.id)).slice(0,6);
+
+  const rRows=recent.map(p=>{const st=sts.find(s=>s.id===p.studentId);return`<tr>
+    <td class="fw7 tw-pri">${esc(p.receiptNo)}</td>
+    <td>${st?`<div style="display:flex;align-items:center;gap:7px">${avatarEl(st)}<div><div class="fw7">${esc(st.name)}</div><div class="fs-sm tw-muted">${esc(p.studentId)}</div></div></div>`:esc(p.studentId)}</td>
+    <td>${fmtD(p.paymentDate)}</td>
+    <td><span class="badge ${p.paymentMode==='Cash'?'b-ok':'b-inf'}">${esc(p.paymentMode)}</span></td>
+    <td class="fw7 tw-ok">${fmtC(p.amount)}</td>
+    <td><button class="btn bo btn-icon" title="View Receipt" onclick="viewRcp('${p.id}')">${icon('receipt',15)}</button></td>
+  </tr>`}).join('')||`<tr><td colspan="6" style="text-align:center;padding:22px;color:var(--muted)">No payments in current session yet.</td></tr>`;
+
+  const dRows=topDues.map(s=>`<tr>
+    <td><div style="display:flex;align-items:center;gap:7px">${avatarEl(s)}<div><div class="fw7">${esc(s.name)}</div><div class="fs-sm tw-muted">${esc(s.id)}</div></div></div></td>
+    <td><span class="badge b-err">${fmtC(balance(s.id))}</span></td>
+    <td><button class="btn bp btn-sm" onclick="S.prefSid='${s.id}';nav('add-payment')">${icon('plus',13)} Pay</button></td>
+  </tr>`).join('')||`<tr><td colspan="3" style="text-align:center;padding:22px;color:var(--muted)">${icon('check',26)}<br>No pending dues!</td></tr>`;
+
+  e('pc').innerHTML=`
+  <div class="sh"><span class="greet">${greeting()}, ${esc((S.user&&S.user.name)||'')}</span></div>
+  <div class="cbar">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+      <div><div style="font-size:1rem;font-weight:700">Session Fee Collection Progress</div><div class="fs-sm tw-muted">${sess} · Total Fees: ${fmtC(totalF)}</div></div>
+      <div style="text-align:right"><div style="font-size:1.5rem;font-weight:800;color:var(--ok)">${pct}%</div><div class="fs-sm tw-muted">Collected</div></div>
+    </div>
+    <div class="pbar"><div class="pfill" style="width:${pct}%;background:linear-gradient(90deg,var(--ok),#34d399)"></div></div>
+    <div style="display:flex;justify-content:space-between;margin-top:7px;font-size:.72rem;color:var(--muted)">
+      <span>Collected: ${fmtC(totalC)}</span><span>Remaining: ${fmtC(totalD)}</span>
+    </div>
+  </div>
+  <div class="sgrid">
+    <div class="sc bl"><div class="si">${icon('users',22)}</div><div><div class="sv">${sessSts.length}</div><div class="sl">Students (${sess})</div></div></div>
+    <div class="sc gn"><div class="si">${icon('wallet',22)}</div><div><div class="sv">${fmtC(totalC)}</div><div class="sl">Total Collected</div></div></div>
+    <div class="sc rd"><div class="si">${icon('alert',22)}</div><div><div class="sv">${fmtC(totalD)}</div><div class="sl">Total Pending</div></div></div>
+    <div class="sc ac"><div class="si">${icon('calendar',22)}</div><div><div class="sv">${fmtC(todC)}</div><div class="sl">Today's Collection</div></div></div>
+    <div class="sc or"><div class="si">${icon('bell',22)}</div><div><div class="sv">${withDues.length}</div><div class="sl">Students with Dues</div></div></div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="ch"><span class="ct">Recent Payments</span><button class="btn bo btn-sm" onclick="nav('payments')">View All ${icon('arrowRight',13)}</button></div>
+      <div class="tw"><table><thead><tr><th>Receipt</th><th>Student</th><th>Date</th><th>Mode</th><th>Amount</th><th></th></tr></thead><tbody>${rRows}</tbody></table></div>
+    </div>
+    <div class="card">
+      <div class="ch"><span class="ct">Pending Dues</span><button class="btn bo btn-sm" onclick="nav('reports')">Full Report ${icon('arrowRight',13)}</button></div>
+      <div class="tw"><table><thead><tr><th>Student</th><th>Due</th><th></th></tr></thead><tbody>${dRows}</tbody></table></div>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════════════════
+// STUDENTS
+// ══════════════════════════════════════════════════════════════
+function rStudents(){
+  let sts=gSt();
+  const q=S.sSrch.toLowerCase();
+  if(q)sts=sts.filter(s=>(s.name||'').toLowerCase().includes(q)||(s.id||'').toLowerCase().includes(q)||(s.admissionNo||'').toLowerCase().includes(q)||(s.mobile||'').includes(q)||(s.fatherName||'').toLowerCase().includes(q));
+  if(S.sStatus!=='all')sts=sts.filter(s=>s.status===S.sStatus);
+  if(S.sSess!=='all')sts=sts.filter(s=>s.session===S.sSess);
+  window._fSts=sts;
+  const rows=sts.map(s=>{
+    const b=balance(s.id);const paid=paidTotal(s.id);
+    const sbadge={Active:'b-ok',Passed:'b-pri',Left:'b-gray'}[s.status]||'b-gray';
+    return`<tr>
+      <td><div style="display:flex;align-items:center;gap:9px">${avatarEl(s)}<div><div class="fw7">${esc(s.name)}</div><div class="fs-sm tw-muted">${esc(s.id)}${s.admissionNo?' · '+esc(s.admissionNo):''}</div></div></div></td>
+      <td>${esc(s.course||'-')}</td><td>${esc(s.session||'-')}</td><td>${esc(s.mobile||'-')}</td>
+      <td><span class="badge ${sbadge}">${s.status}</span></td>
+      <td class="tw-ok fw7">${fmtC(paid)}</td>
+      <td class="${b>0?'tw-err fw7':'tw-ok'}">${b>0?fmtC(b):'Paid'}</td>
+      <td><div class="iconbar">
+        <button class="btn bo btn-icon" title="View" onclick="S.viewSid='${s.id}';nav('student-detail')">${icon('eye',15)}</button>
+        <button class="btn bp btn-icon" title="Add Payment" onclick="S.prefSid='${s.id}';nav('add-payment')">${icon('card',15)}</button>
+        ${S.user.role==='admin'?`<button class="btn bo btn-icon" title="Edit" onclick="S.editSid='${s.id}';nav('edit-student')">${icon('edit',14)}</button><button class="btn br btn-icon" title="Delete" onclick="delStu('${s.id}')">${icon('trash',14)}</button>`:''}
+      </div></td>
+    </tr>`;
+  }).join('')||`<tr><td colspan="8"><div class="empty"><div class="ei">${icon('users',44,1.5)}</div><h3>No students found</h3><p>Try different filters or <a href="#" onclick="nav('add-student');return false">add a student</a></p></div></td></tr>`;
+
+  e('pc').innerHTML=`
+  <div class="sh"><span class="st">Students (${sts.length}/${gSt().length})</span>
+    <div style="display:flex;gap:7px"><button class="btn bo btn-sm" onclick="nav('bulk-upload')">${icon('upload',14)} Bulk Upload</button><button class="btn bp" onclick="nav('add-student')">${icon('plus',15)} Add Student</button></div>
+  </div>
+  <div class="card" style="padding:14px;margin-bottom:14px">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <div class="sinp" style="flex:1;min-width:190px"><span class="sico">${icon('search',15)}</span><input type="text" placeholder="Search name, ID, mobile, father..." value="${esc(S.sSrch)}" oninput="S.sSrch=this.value;rStudents()"></div>
+      <select style="width:150px" onchange="S.sStatus=this.value;rStudents()">
+        <option value="all" ${S.sStatus==='all'?'selected':''}>All Status</option>
+        ${STATUSES.map(x=>`<option value="${x}" ${S.sStatus===x?'selected':''}>${x}</option>`).join('')}
+      </select>
+      <select style="width:155px" onchange="S.sSess=this.value;rStudents()">
+        <option value="all" ${S.sSess==='all'?'selected':''}>All Sessions</option>
+        ${SESSIONS.map(x=>`<option value="${x}" ${S.sSess===x?'selected':''}>${x}</option>`).join('')}
+      </select>
+      <button class="btn bo btn-sm" onclick="S.sSrch='';S.sStatus='all';S.sSess='all';rStudents()">${icon('x',13)} Clear</button>
+      <button class="btn bg btn-sm" onclick="expStuCSV()">${icon('download',14)} Export CSV</button>
+    </div>
+  </div>
+  <div class="card"><div class="tw"><table><thead><tr><th>Student</th><th>Course</th><th>Session</th><th>Mobile</th><th>Status</th><th>Paid</th><th>Balance</th><th>Actions</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+}
+
+function expStuCSV(){
+  const hdr=['ID','Admission No','Name','Father','Mother','Mobile','Address','Course','Session','Year','Semester','Category','Admission Date','Total Fees','Scholarship','Discount','Status','Paid','Balance'];
+  const rows=(window._fSts||gSt()).map(s=>[s.id,s.admissionNo,s.name,s.fatherName,s.motherName,s.mobile,s.address,s.course,s.session,s.year,s.semester,s.category,s.dateOfAdmission,s.totalFees,s.scholarship||0,s.discount||0,s.status,paidTotal(s.id).toFixed(2),balance(s.id).toFixed(2)]);
+  csvDl([hdr,...rows],'students_export.csv');showToast('Student list exported.','ok');
+}
+
+async function delStu(id){
+  const s=gSt().find(x=>x.id===id);if(!s)return;
+  const pys=gPy().filter(p=>p.studentId===id);
+  const ok=await askConfirm({
+    title:'Delete Student',danger:true,confirmLabel:'Delete',
+    message:pys.length?`Deleting "${s.name}" will also permanently erase ${pys.length} payment record(s) linked to them.`:`Delete "${s.name}"? This cannot be undone.`,
+    requireText:pys.length?s.name:null
+  });
+  if(!ok)return;
+  try{
+    await dbDeleteStudent(id);addLog('DEL_STU',`Deleted ${s.name} (${id})`);
+    showToast(`Student "${s.name}" deleted.`,'ok');rStudents();
+  }catch(err){showToast('Delete failed: '+friendlySbError(err),'error')}
+}
+
+// ══════════════════════════════════════════════════════════════
+// ADD / EDIT STUDENT
+// ══════════════════════════════════════════════════════════════
+function rAddStudent(data){
+  const se=gSe();const d=data||{};const isEd=!!data;
+  S.photoB64=d.photo||null;
+  e('pc').innerHTML=`
+  <div style="max-width:800px">
+  <div class="card">
+  <div class="ch"><span class="ct">${isEd?'Edit Student':'Add New Student'}</span></div>
+  <div class="cb">
+    <div style="display:flex;gap:22px;align-items:flex-start;margin-bottom:20px;flex-wrap:wrap">
+      <div>
+        <div class="phup" id="ph-area" onclick="e('ph-inp').click()">
+          ${S.photoB64?`<img src="${S.photoB64}" alt="photo">`:icon('camera',30,1.5)}
+        </div>
+        <p style="font-size:.68rem;color:var(--muted);text-align:center;margin-top:5px">Click to upload<br>student photo</p>
+        <input type="file" id="ph-inp" accept="image/*" style="display:none" onchange="handlePhoto(this)">
+      </div>
+      <div style="flex:1;min-width:240px">
+        <div class="fr">
+          <div class="fg"><label class="req">Student ID / Roll No</label><input type="text" id="f-id" value="${esc(d.id||autoSid())}" ${isEd?'disabled style="background:var(--bg);color:var(--muted)"':''}>${isEd?'<p class="hint">ID is locked after creation to keep records consistent.</p>':''}</div>
+          <div class="fg"><label class="req">Admission Number</label><input type="text" id="f-admno" value="${esc(d.admissionNo||'')}"></div>
+        </div>
+        <div class="fg"><label class="req">Full Name</label><input type="text" id="f-name" value="${esc(d.name||'')}"></div>
+      </div>
+    </div>
+    <hr class="divider">
+    <div class="fr">
+      <div class="fg"><label class="req">Father's Name</label><input type="text" id="f-dad" value="${esc(d.fatherName||'')}"></div>
+      <div class="fg"><label>Mother's Name</label><input type="text" id="f-mom" value="${esc(d.motherName||'')}"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="req">Mobile Number</label><input type="tel" id="f-mob" value="${esc(d.mobile||'')}" maxlength="10" placeholder="10-digit"></div>
+      <div class="fg"><label>Alternate Mobile</label><input type="tel" id="f-altmob" value="${esc(d.altMobile||'')}" maxlength="10"></div>
+    </div>
+    <div class="fg"><label>Address</label><textarea id="f-addr">${esc(d.address||'')}</textarea></div>
+    <hr class="divider">
+    <div class="fr3">
+      <div class="fg"><label class="req">Course</label><select id="f-crs">${COURSES.map(c=>`<option ${(d.course||'B.Ed')===c?'selected':''}>${c}</option>`).join('')}</select></div>
+      <div class="fg"><label class="req">Session</label><select id="f-sess">${SESSIONS.map(s=>`<option value="${s}" ${(d.session||se.currentSession)===s?'selected':''}>${s}</option>`).join('')}</select></div>
+      <div class="fg"><label>Year</label><select id="f-yr">${YEARS.map(y=>`<option ${(d.year||'1st Year')===y?'selected':''}>${y}</option>`).join('')}</select></div>
+    </div>
+    <div class="fr3">
+      <div class="fg"><label>Semester</label><select id="f-sem">${SEMS.map(s=>`<option ${(d.semester||'1st Semester')===s?'selected':''}>${s}</option>`).join('')}</select></div>
+      <div class="fg"><label>Category</label><select id="f-cat">${CATS.map(c=>`<option ${(d.category||'General')===c?'selected':''}>${c}</option>`).join('')}</select></div>
+      <div class="fg"><label>Date of Admission</label><input type="date" id="f-doa" value="${d.dateOfAdmission||today()}"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label>Date of Birth</label><input type="date" id="f-dob" value="${d.dob||''}"></div>
+      <div class="fg"><label>Status</label><select id="f-sts">${STATUSES.map(s=>`<option ${(d.status||'Active')===s?'selected':''}>${s}</option>`).join('')}</select></div>
+    </div>
+    <hr class="divider">
+    <div class="fr3">
+      <div class="fg"><label class="req">Total Fees (₹)</label><input type="number" id="f-fees" value="${d.totalFees||''}" min="0" step="100"></div>
+      <div class="fg"><label>Scholarship (₹)</label><input type="number" id="f-sch" value="${d.scholarship||''}" min="0" step="100"></div>
+      <div class="fg"><label>Discount / Concession (₹)</label><input type="number" id="f-disc" value="${d.discount||''}" min="0" step="100"></div>
+    </div>
+    <div class="fg"><label>Remarks / Notes</label><textarea id="f-rem" style="min-height:55px">${esc(d.remarks||'')}</textarea></div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:6px">
+      <button class="btn bo" onclick="nav('students')">Cancel</button>
+      <button class="btn bp" id="stu-save-btn" onclick="${isEd?`svEditStu('${d.id}')`:'svNewStu()'}">${isEd?'Save Changes':'Add Student'}</button>
+    </div>
+  </div></div></div>`;
+}
+
+function rEditStudent(){const s=gSt().find(x=>x.id===S.editSid);if(!s){nav('students');return}rAddStudent(s)}
+
+function handlePhoto(inp){
+  const f=inp.files[0];if(!f)return;
+  if(f.size>2097152){showToast('Photo must be under 2MB.','error');return}
+  const r=new FileReader();r.onload=ev=>{S.photoB64=ev.target.result;e('ph-area').innerHTML=`<img src="${S.photoB64}" alt="photo">`};r.readAsDataURL(f);
+}
+
+function collectStuForm(){
+  const id=e('f-id').value.trim();const name=e('f-name').value.trim();const dad=e('f-dad').value.trim();const fees=e('f-fees').value;
+  if(!id){showToast('Please enter Student ID.','error');return null}
+  if(!name){showToast('Please enter student name.','error');return null}
+  if(!dad){showToast("Please enter father's name.",'error');return null}
+  if(!fees){showToast('Please enter total fees.','error');return null}
+  return{id,admissionNo:e('f-admno').value.trim(),name,fatherName:dad,motherName:e('f-mom').value.trim(),mobile:e('f-mob').value.trim(),altMobile:e('f-altmob').value.trim(),address:e('f-addr').value.trim(),course:e('f-crs').value,session:e('f-sess').value,year:e('f-yr').value,semester:e('f-sem').value,category:e('f-cat').value,dateOfAdmission:e('f-doa').value,dob:e('f-dob').value,status:e('f-sts').value,totalFees:parseFloat(fees)||0,scholarship:parseFloat(e('f-sch').value)||0,discount:parseFloat(e('f-disc').value)||0,remarks:e('f-rem').value.trim(),photo:S.photoB64,createdAt:new Date().toISOString()};
+}
+
+async function svNewStu(){
+  const d=collectStuForm();if(!d)return;
+  const sts=gSt();
+  if(sts.find(s=>s.id===d.id)){showToast('Student ID already exists.','error');return}
+  if(d.admissionNo&&sts.find(s=>s.admissionNo===d.admissionNo)){showToast('Admission Number already exists.','error');return}
+  setBusy('stu-save-btn',true);
+  try{
+    await dbAddStudent(d);addLog('ADD_STU',`Added ${d.name} (${d.id})`);
+    showToast(`Student "${d.name}" added successfully!`,'ok');nav('students');
+  }catch(err){setBusy('stu-save-btn',false);showToast('Save failed: '+friendlySbError(err),'error')}
+}
+
+async function svEditStu(origId){
+  const d=collectStuForm();if(!d)return;
+  d.id=origId; // ID field is locked during edit — always keep the original id
+  setBusy('stu-save-btn',true);
+  try{
+    await dbUpdateStudent(origId,d);
+    addLog('EDIT_STU',`Edited ${d.name} (${d.id})`);
+    showToast(`Student "${d.name}" updated!`,'ok');S.viewSid=d.id;nav('student-detail');
+  }catch(err){setBusy('stu-save-btn',false);showToast('Save failed: '+friendlySbError(err),'error')}
+}
+
+// ══════════════════════════════════════════════════════════════
+// STUDENT DETAIL
+// ══════════════════════════════════════════════════════════════
+function rStudentDetail(){
+  const s=gSt().find(x=>x.id===S.viewSid);if(!s){nav('students');return}
+  const pys=gPy().filter(p=>p.studentId===s.id).sort((a,b)=>new Date(a.paymentDate)-new Date(b.paymentDate));
+  const pd=paidTotal(s.id);const nf=netFees(s);const bl=Math.max(0,nf-pd);
+  const pct=nf>0?Math.min(100,Math.round(pd/nf*100)):0;
+  const ini=(s.name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  const pRows=pys.map(p=>`<tr>
+    <td class="fw7 tw-pri">${esc(p.receiptNo)}</td>
+    <td>${fmtD(p.paymentDate)}</td>
+    <td>${esc(p.feeHead||'-')}</td>
+    <td>${esc(p.installment||'-')}</td>
+    <td><span class="badge ${p.paymentMode==='Cash'?'b-ok':'b-inf'}">${esc(p.paymentMode)}</span></td>
+    <td class="fw7 tw-ok">${fmtC(p.amount)}</td>
+    <td>${esc(p.collectedBy||'-')}</td>
+    <td><div class="iconbar">
+      <button class="btn bo btn-icon" title="Receipt" onclick="viewRcp('${p.id}')">${icon('receipt',14)}</button>
+      ${S.user.role==='admin'?`<button class="btn br btn-icon" title="Delete" onclick="delPay('${p.id}','detail')">${icon('trash',14)}</button>`:''}
+    </div></td>
+  </tr>`).join('')||`<tr><td colspan="8" style="text-align:center;padding:22px;color:var(--muted)">No payments recorded yet.</td></tr>`;
+
+  e('pc').innerHTML=`
+  <div style="max-width:900px">
+  <div class="card" style="margin-bottom:14px"><div class="cb">
+    <div style="display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap">
+      <div style="flex-shrink:0">
+        ${s.photo?`<img src="${s.photo}" style="width:95px;height:115px;object-fit:cover;border-radius:8px;border:2px solid var(--bdr)">`:`<div style="width:95px;height:115px;background:rgba(27,58,107,.1);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:2.2rem;font-weight:800;color:var(--pri);font-family:var(--serif)">${ini}</div>`}
+      </div>
+      <div style="flex:1;min-width:220px">
+        <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <div>
+            <h2 class="brand" style="font-size:1.3rem;font-weight:700">${esc(s.name)}</h2>
+            <div style="margin-top:5px;display:flex;gap:6px;flex-wrap:wrap">
+              <span class="badge b-pri">${esc(s.id)}</span>
+              ${s.admissionNo?`<span class="badge b-gray">ADM: ${esc(s.admissionNo)}</span>`:''}
+              <span class="badge ${s.status==='Active'?'b-ok':s.status==='Passed'?'b-pri':'b-gray'}">${s.status}</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:7px;flex-wrap:wrap">
+            <button class="btn bp btn-sm" onclick="S.prefSid='${s.id}';nav('add-payment')">${icon('plus',14)} Add Payment</button>
+            ${S.user.role==='admin'?`<button class="btn bo btn-sm" onclick="S.editSid='${s.id}';nav('edit-student')">${icon('edit',13)} Edit</button>`:''}
+            <button class="btn bo btn-sm" onclick="nav('students')">Back</button>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:10px;margin-top:14px;font-size:.84rem">
+          <div><span class="tw-muted">Father: </span><strong>${esc(s.fatherName||'-')}</strong></div>
+          <div><span class="tw-muted">Mother: </span><strong>${esc(s.motherName||'-')}</strong></div>
+          <div><span class="tw-muted">Mobile: </span><strong>${esc(s.mobile||'-')}</strong></div>
+          <div><span class="tw-muted">Course: </span><strong>${esc(s.course||'-')}</strong></div>
+          <div><span class="tw-muted">Session: </span><strong>${esc(s.session||'-')}</strong></div>
+          <div><span class="tw-muted">Year/Sem: </span><strong>${esc(s.year||'-')} · ${esc(s.semester||'-')}</strong></div>
+          <div><span class="tw-muted">Category: </span><strong>${esc(s.category||'-')}</strong></div>
+          <div><span class="tw-muted">Admitted: </span><strong>${fmtD(s.dateOfAdmission)}</strong></div>
+          ${s.address?`<div style="grid-column:1/-1"><span class="tw-muted">Address: </span><strong>${esc(s.address)}</strong></div>`:''}
+        </div>
+      </div>
+    </div>
+  </div></div>
+  <div class="sgrid" style="margin-bottom:14px">
+    <div class="sc bl"><div class="si">${icon('receipt',22)}</div><div><div class="sv">${fmtC(nf)}</div><div class="sl">Net Fees Payable</div></div></div>
+    <div class="sc gn"><div class="si">${icon('check',22)}</div><div><div class="sv">${fmtC(pd)}</div><div class="sl">Total Paid</div></div></div>
+    <div class="sc ${bl>0?'rd':'gn'}"><div class="si">${icon(bl>0?'alert':'check',22)}</div><div><div class="sv">${bl>0?fmtC(bl):'CLEAR'}</div><div class="sl">${bl>0?'Balance Due':'Fully Paid'}</div></div></div>
+  </div>
+  <div class="card" style="margin-bottom:14px"><div class="cb">
+    <div style="display:flex;justify-content:space-between;margin-bottom:7px">
+      <span class="fw7">Fee Collection Progress</span>
+      <span class="fw7 ${pct>=100?'tw-ok':'tw-pri'}">${pct}%</span>
+    </div>
+    <div class="pbar"><div class="pfill" style="width:${pct}%;background:${pct>=100?'var(--ok)':'var(--pri)'}"></div></div>
+    ${s.scholarship||s.discount?`<div style="margin-top:7px;font-size:.76rem;color:var(--muted)">Total: ${fmtC(s.totalFees)}${s.scholarship?` · Scholarship: -${fmtC(s.scholarship)}`:''}${s.discount?` · Discount: -${fmtC(s.discount)}`:''} → Net: ${fmtC(nf)}</div>`:''}
+  </div></div>
+  <div class="card"><div class="ch"><span class="ct">Payment History (${pys.length})</span><button class="btn bp btn-sm" onclick="S.prefSid='${s.id}';nav('add-payment')">${icon('plus',14)} Add Payment</button></div>
+  <div class="tw"><table><thead><tr><th>Receipt</th><th>Date</th><th>Fee Head</th><th>Installment</th><th>Mode</th><th>Amount</th><th>Collected By</th><th>Action</th></tr></thead><tbody>${pRows}</tbody></table></div>
+  </div></div>`;
+}
+
+// ══════════════════════════════════════════════════════════════
+// PAYMENTS LIST
+// ══════════════════════════════════════════════════════════════
+function rPayments(){
+  const se=gSe();let pys=gPy();const sts=gSt();
+  if(S.pSess&&S.pSess!=='all')pys=pys.filter(p=>p.session===S.pSess);
+  if(S.pMode!=='all')pys=pys.filter(p=>p.paymentMode===S.pMode);
+  if(S.pFrom)pys=pys.filter(p=>p.paymentDate>=S.pFrom);
+  if(S.pTo)pys=pys.filter(p=>p.paymentDate<=S.pTo);
+  if(S.pSrch){const q=S.pSrch.toLowerCase();const stMap={};sts.forEach(s=>stMap[s.id]=s);pys=pys.filter(p=>(p.receiptNo||'').toLowerCase().includes(q)||((stMap[p.studentId]&&stMap[p.studentId].name)||'').toLowerCase().includes(q)||(p.studentId||'').toLowerCase().includes(q)||(p.transactionId||'').toLowerCase().includes(q))}
+  pys=pys.slice().sort((a,b)=>new Date(b.createdAt||b.paymentDate)-new Date(a.createdAt||a.paymentDate));
+  window._fPys=pys;
+  const tot=pys.reduce((s,p)=>s+(parseFloat(p.amount)||0),0);
+  const stMap={};sts.forEach(s=>stMap[s.id]=s);
+  const rows=pys.map(p=>{const s=stMap[p.studentId];return`<tr>
+    <td class="fw7 tw-pri">${esc(p.receiptNo)}</td>
+    <td>${fmtD(p.paymentDate)}</td>
+    <td><div style="display:flex;align-items:center;gap:7px">${s?avatarEl(s):''}<div><div class="fw7">${esc(s?s.name:'Unknown')}</div><div class="fs-sm tw-muted">${esc(p.studentId)}</div></div></div></td>
+    <td>${esc(p.feeHead||'-')}</td>
+    <td><span class="badge ${p.paymentMode==='Cash'?'b-ok':'b-inf'}">${esc(p.paymentMode)}</span></td>
+    <td class="fs-sm tw-muted">${p.paymentMode==='Cash'?esc(p.toWhom||'-'):esc(p.transactionId||'-')}</td>
+    <td class="fw7 tw-ok">${fmtC(p.amount)}</td>
+    <td>${esc(p.collectedBy||'-')}</td>
+    <td><div class="iconbar">
+      <button class="btn bo btn-icon" title="Receipt" onclick="viewRcp('${p.id}')">${icon('receipt',14)}</button>
+      ${S.user.role==='admin'?`<button class="btn br btn-icon" title="Delete" onclick="delPay('${p.id}','list')">${icon('trash',14)}</button>`:''}
+    </div></td>
+  </tr>`}).join('')||`<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--muted)">No payments found.</td></tr>`;
+
+  e('pc').innerHTML=`
+  <div class="sh"><span class="st">Payments (${pys.length}) · Total: ${fmtC(tot)}</span>
+    <div style="display:flex;gap:7px"><button class="btn bg btn-sm" onclick="expPayCSV()">${icon('download',14)} Export CSV</button><button class="btn bp" onclick="nav('add-payment')">${icon('plus',15)} Add Payment</button></div>
+  </div>
+  <div class="card" style="padding:13px;margin-bottom:13px">
+    <div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center">
+      <div class="sinp" style="flex:1;min-width:180px"><span class="sico">${icon('search',15)}</span><input type="text" placeholder="Search receipt, student, txn ID..." value="${esc(S.pSrch)}" oninput="S.pSrch=this.value;rPayments()"></div>
+      <select style="width:150px" onchange="S.pSess=this.value;rPayments()">
+        <option value="all" ${(!S.pSess||S.pSess==='all')?'selected':''}>All Sessions</option>
+        ${SESSIONS.map(x=>`<option value="${x}" ${S.pSess===x?'selected':''}>${x}</option>`).join('')}
+      </select>
+      <select style="width:135px" onchange="S.pMode=this.value;rPayments()">
+        <option value="all" ${S.pMode==='all'?'selected':''}>All Modes</option>
+        ${PMODES.map(m=>`<option value="${m}" ${S.pMode===m?'selected':''}>${m}</option>`).join('')}
+      </select>
+      <input type="date" value="${S.pFrom}" style="width:135px" onchange="S.pFrom=this.value;rPayments()" title="From Date">
+      <input type="date" value="${S.pTo}" style="width:135px" onchange="S.pTo=this.value;rPayments()" title="To Date">
+      <button class="btn bo btn-sm" onclick="S.pSrch='';S.pMode='all';S.pFrom='';S.pTo='';S.pSess=gSe().currentSession;rPayments()">${icon('x',13)} Clear</button>
+    </div>
+  </div>
+  <div class="card"><div class="tw"><table><thead><tr><th>Receipt No</th><th>Date</th><th>Student</th><th>Fee Head</th><th>Mode</th><th>Txn / Rcvd By</th><th>Amount</th><th>Collected By</th><th>Actions</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+}
+
+function expPayCSV(){
+  const sts=gSt();const stMap={};sts.forEach(s=>stMap[s.id]=s);
+  const hdr=['Receipt No','Date','Student ID','Student Name','Fee Head','Installment','Mode','Txn ID / Rcvd By','Amount','Remarks','Collected By','Session'];
+  const rows=(window._fPys||gPy()).map(p=>[p.receiptNo,p.paymentDate,p.studentId,(stMap[p.studentId]&&stMap[p.studentId].name)||'',p.feeHead,p.installment,p.paymentMode,p.transactionId||p.toWhom||'',p.amount,p.remarks,p.collectedBy,p.session]);
+  csvDl([hdr,...rows],'payments_export.csv');showToast('Payments exported.','ok');
+}
+
+async function delPay(id,from){
+  const p=gPy().find(x=>x.id===id);if(!p)return;
+  const ok=await askConfirm({title:'Delete Payment',danger:true,confirmLabel:'Delete',message:`Delete receipt ${p.receiptNo} (${fmtC(p.amount)})? This cannot be undone.`});
+  if(!ok)return;
+  try{
+    await dbDeletePayment(id);addLog('DEL_PAY',`Deleted ${p.receiptNo}`);
+    showToast('Payment deleted.','ok');
+    if(from==='detail')rStudentDetail();else rPayments();
+  }catch(err){showToast('Delete failed: '+friendlySbError(err),'error')}
+}
+
+// ══════════════════════════════════════════════════════════════
+// ADD PAYMENT
+// ══════════════════════════════════════════════════════════════
+function rAddPayment(){
+  const se=gSe();
+  const sts=gSt().filter(s=>s.status==='Active');
+  const pre=S.prefSid||'';S.prefSid=null;
+  const sopts=sts.map(s=>`<option value="${s.id}" ${s.id===pre?'selected':''}>${esc(s.name)} (${s.id}) – Bal: ${fmtC(balance(s.id))}</option>`).join('');
+
+  e('pc').innerHTML=`
+  <div style="max-width:700px"><div class="card">
+  <div class="ch"><span class="ct">Add New Payment</span></div>
+  <div class="cb">
+    <div id="pay-stu-info"></div>
+    <div class="fg"><label class="req">Select Student</label>
+      <select id="py-stu" onchange="onStuChg()"><option value="">-- Select Student --</option>${sopts}</select>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="req">Payment Date</label><input type="date" id="py-dt" value="${today()}"></div>
+      <div class="fg"><label class="req">Amount (₹)</label><input type="number" id="py-amt" placeholder="Enter amount" min="1" step="1"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="req">Fee Head</label><select id="py-fh">${FHEADS.map(h=>`<option>${h}</option>`).join('')}</select></div>
+      <div class="fg"><label>Installment</label><select id="py-inst">${INSTS.map(i=>`<option>${i}</option>`).join('')}</select></div>
+    </div>
+    <div class="fg">
+      <label class="req">Payment Mode</label>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px" id="py-modes">
+        ${PMODES.map((m,i)=>`<label class="check-row${i===0?' sel':''}" id="ml-${m.replace(' ','-')}" onclick="selMode('${m}')">
+          <input type="radio" name="pymode" value="${m}" ${i===0?'checked':''} style="width:auto;margin:0" onchange="onModeChg()">
+          ${m}
+        </label>`).join('')}
+      </div>
+    </div>
+    <div id="py-extra"></div>
+    <div class="fr">
+      <div class="fg"><label class="req">Collected By</label><input type="text" id="py-by" value="${esc((S.user&&S.user.name)||'')}" placeholder="Staff name who collected"></div>
+      <div class="fg"><label>Session</label><select id="py-sess">${SESSIONS.map(s=>`<option value="${s}" ${s===se.currentSession?'selected':''}>${s}</option>`).join('')}</select></div>
+    </div>
+    <div class="fg"><label>Remarks / Notes</label><textarea id="py-rem" style="min-height:55px" placeholder="Optional notes..."></textarea></div>
+    <div id="pay-bal-info"></div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:8px">
+      <button class="btn bo" onclick="nav('payments')">Cancel</button>
+      <button class="btn bp" id="pay-save-btn" onclick="svPayment()">${icon('card',15)} Record Payment &amp; Generate Receipt</button>
+    </div>
+  </div></div></div>`;
+
+  selMode('Cash');
+  if(pre){e('py-stu').value=pre;onStuChg()}
+}
+
+function selMode(m){
+  PMODES.forEach(x=>{const lbl=e('ml-'+x.replace(' ','-'));if(lbl){lbl.classList.toggle('sel',x===m);lbl.querySelector('input').checked=(x===m)}});
+  onModeChg();
+}
+
+function onModeChg(){
+  const sel=document.querySelector('input[name="pymode"]:checked');const m=sel?sel.value:'Cash';
+  const ex=e('py-extra');if(!ex)return;
+  if(m==='Cash'){
+    ex.innerHTML=`<div class="fr">
+      <div class="fg"><label class="req">Received By (Name)</label><input type="text" id="py-towho" value="${esc((S.user&&S.user.name)||'')}" placeholder="Who physically received the cash?"></div>
+      <div class="fg"><label>Change Returned to Student (₹)</label><input type="number" id="py-chng" placeholder="0 if none" min="0"></div>
+    </div>`;
+  }else{
+    const lb={'UPI':'UPI Transaction ID','Bank Transfer':'Bank Txn / NEFT / IMPS Reference No','Cheque':'Cheque Number'}[m]||'Transaction ID';
+    const ph={'UPI':'e.g. UPI123456789012','Bank Transfer':'e.g. NEFT/IMPS reference no','Cheque':'e.g. 001234 (6-digit cheque no)'}[m]||'Enter ID';
+    ex.innerHTML=`<div class="fg"><label class="req">${lb}</label>
+      <input type="text" id="py-txn" placeholder="${ph}" onblur="chkTxn(this)" oninput="e('txn-err').style.display='none';this.classList.remove('err')">
+      <div id="txn-err" class="emsg" style="display:none">${icon('alert',13)} This transaction ID is already used in another payment! Please verify.</div>
+    </div>`;
+  }
+}
+
+function chkTxn(inp){
+  const v=inp.value.trim();const er=e('txn-err');if(!er)return;
+  if(v&&txnUsed(v)){inp.classList.add('err');er.style.display='flex'}else{inp.classList.remove('err');er.style.display='none'}
+}
+
+function onStuChg(){
+  const sid=e('py-stu').value;const inf=e('pay-stu-info');const bal=e('pay-bal-info');
+  if(!sid){if(inf)inf.innerHTML='';if(bal)bal.innerHTML='';return}
+  const s=gSt().find(x=>x.id===sid);if(!s)return;
+  const nf=netFees(s);const pd=paidTotal(sid);const bl=Math.max(0,nf-pd);
+  if(inf)inf.innerHTML=`<div class="alert a-inf" style="margin-bottom:12px"><div style="display:flex;gap:14px;flex-wrap:wrap;font-size:.84rem">
+    <div><strong>${esc(s.name)}</strong></div>
+    <div>${esc(s.course)} · ${esc(s.session)}</div>
+    <div>Net Fees: <strong>${fmtC(nf)}</strong></div>
+    <div>Paid: <strong class="tw-ok">${fmtC(pd)}</strong></div>
+    <div>Balance: <strong class="${bl>0?'tw-err':'tw-ok'}">${bl>0?fmtC(bl):'Fully Paid'}</strong></div>
+  </div></div>`;
+  if(bal)bal.innerHTML=bl>0?`<div class="alert a-warn">Pending due: <strong>${fmtC(bl)}</strong> — make sure to collect the correct amount.</div>`:`<div class="alert a-ok">Student has no pending dues as of now.</div>`;
+}
+
+async function svPayment(){
+  const sid=e('py-stu').value;const dt=e('py-dt').value;const amt=parseFloat(e('py-amt').value);
+  const fh=e('py-fh').value;const inst=e('py-inst').value;const by=e('py-by').value.trim();const sess=e('py-sess').value;const rem=e('py-rem').value.trim();
+  const selm=document.querySelector('input[name="pymode"]:checked');const m=selm?selm.value:'Cash';
+  if(!sid){showToast('Please select a student.','error');return}
+  if(!dt){showToast('Please enter payment date.','error');return}
+  if(!amt||amt<=0){showToast('Please enter a valid amount.','error');return}
+  if(!by){showToast('Please enter who collected the payment.','error');return}
+  let txn='',toWho='',chng=0;
+  if(m==='Cash'){
+    toWho=((e('py-towho')&&e('py-towho').value)||'').trim();if(!toWho){showToast('Please enter who received the cash.','error');return}
+    chng=parseFloat((e('py-chng')&&e('py-chng').value)||0)||0;
+  }else{
+    txn=((e('py-txn')&&e('py-txn').value)||'').trim();if(!txn){showToast('Please enter the transaction ID.','error');return}
+    if(txnUsed(txn)){showToast('This transaction ID already exists. Please check and re-enter.','error');return}
+  }
+  const s=gSt().find(x=>x.id===sid);if(!s){showToast('Student not found.','error');return}
+  const rno=nextRcp();const pid=nextId('PAY');
+  const pay={id:pid,receiptNo:rno,studentId:sid,studentName:s.name,paymentDate:dt,amount:amt,feeHead:fh,installment:inst,paymentMode:m,transactionId:txn,toWhom:toWho,changeReturned:chng,collectedBy:by,session:sess,remarks:rem,createdAt:new Date().toISOString(),createdBy:(S.user&&S.user.name)||''};
+  setBusy('pay-save-btn',true);
+  try{
+    await dbAddPayment(pay);addLog('ADD_PAY',`${rno} for ${s.name} – ${fmtC(amt)}`);
+    nav('payments');setTimeout(()=>viewRcp(pid),150);
+  }catch(err){setBusy('pay-save-btn',false);showToast('Save failed: '+friendlySbError(err),'error')}
+}
+
+// ══════════════════════════════════════════════════════════════
+// RECEIPT VIEW
+// ══════════════════════════════════════════════════════════════
+function viewRcp(pid){
+  const p=gPy().find(x=>x.id===pid);if(!p){showToast('Payment not found.','error');return}
+  const s=gSt().find(x=>x.id===p.studentId);if(!s){showToast('Student not found.','error');return}
+  const se=gSe();const nf=netFees(s);const pd=paidTotal(s.id);const bl=Math.max(0,nf-pd);
+  const prevPd=pd-(parseFloat(p.amount)||0);const prevBl=Math.max(0,nf-prevPd);const full=bl===0;
+
+  showModal('rcp-modal',`
+    <div class="mh"><span class="mt">${icon('receipt',18)} Receipt — ${esc(p.receiptNo)}</span><button class="bcl" onclick="closeM()">${icon('x',18)}</button></div>
+    <div class="mb2" style="padding:16px">${buildRcp(p,s,se,prevBl,bl,full)}</div>
+    <div class="mf">
+      <button class="btn bo" onclick="closeM()">Close</button>
+      <button class="btn bp" onclick="printRcp('${pid}')">${icon('receipt',15)} Print / Save as PDF</button>
+    </div>
+  `,'modal-lg');
+}
+
+function buildRcp(p,s,se,prevBl,curBl,full){
+  const nf=netFees(s);const prevPd=nf-prevBl;
+  return`<div class="r-wrap">
+  <div class="r-hd">
+    ${se.logo?`<img src="${se.logo}" style="height:52px;margin-bottom:7px;display:block;margin-left:auto;margin-right:auto">`:''}
+    <div class="r-college">${esc(se.collegeName)}</div>
+    ${se.affiliatedTo?`<div class="r-sub">Affiliated to: ${esc(se.affiliatedTo)}</div>`:''}
+    <div class="r-sub">${esc(se.address)}</div>
+    <div class="r-sub">Ph: ${esc(se.phone)}${se.email?' · '+esc(se.email):''}${se.regNo?' · Reg. No: '+esc(se.regNo):''}</div>
+  </div>
+  <div class="r-title">FEE PAYMENT RECEIPT</div>
+  <div class="r-meta">
+    <div><div><strong>Receipt No:</strong> <span style="color:#1B3A6B;font-weight:800">${esc(p.receiptNo)}</span></div><div style="margin-top:4px"><strong>Date:</strong> ${fmtD(p.paymentDate)}</div></div>
+    <div style="text-align:right"><div><strong>Session:</strong> ${esc(p.session||se.currentSession)}</div><div style="margin-top:4px"><strong>Collected By:</strong> ${esc(p.collectedBy)}</div></div>
+  </div>
+  <table class="r-table">
+    <tr><td>Student Name</td><td>${esc(s.name)}</td><td>Student ID</td><td>${esc(s.id)}</td></tr>
+    <tr><td>Father's Name</td><td>${esc(s.fatherName||'-')}</td><td>Admission No</td><td>${esc(s.admissionNo||'-')}</td></tr>
+    <tr><td>Course / Year</td><td>${esc(s.course||'-')} · ${esc(s.year||'-')}</td><td>Category</td><td>${esc(s.category||'-')}</td></tr>
+    <tr><td>Fee Head</td><td>${esc(p.feeHead||'-')}</td><td>Installment</td><td>${esc(p.installment||'-')}</td></tr>
+    <tr><td>Payment Mode</td><td colspan="3">${esc(p.paymentMode)}${p.transactionId?' | Txn ID: '+esc(p.transactionId):''}${p.toWhom?' | Received By: '+esc(p.toWhom):''}${p.changeReturned>0?' | Change Returned: '+fmtC(p.changeReturned):''}</td></tr>
+    ${p.remarks?`<tr><td>Remarks</td><td colspan="3">${esc(p.remarks)}</td></tr>`:''}
+  </table>
+  <div class="r-amt">
+    ${full?'<div class="r-stamp">PAID</div>':''}
+    <div class="r-row"><span>Total Fees</span><span>${fmtC(s.totalFees)}</span></div>
+    ${(parseFloat(s.scholarship)||0)>0?`<div class="r-row" style="color:var(--ok)"><span>(-) Scholarship</span><span>- ${fmtC(s.scholarship)}</span></div>`:''}
+    ${(parseFloat(s.discount)||0)>0?`<div class="r-row" style="color:var(--ok)"><span>(-) Discount / Concession</span><span>- ${fmtC(s.discount)}</span></div>`:''}
+    <div class="r-row" style="border-top:1px solid #ddd;margin-top:5px;padding-top:7px"><span>Net Fees Payable</span><span style="font-weight:700">${fmtC(netFees(s))}</span></div>
+    <div class="r-row"><span>Previously Paid</span><span>${fmtC(prevPd)}</span></div>
+    <div class="r-row"><span>Previous Balance</span><span style="color:${prevBl>0?'#DC2626':'#059669'}">${fmtC(prevBl)}</span></div>
+    <div class="r-row tot"><span>Amount Paid Now</span><span>₹ ${(parseFloat(p.amount)||0).toLocaleString('en-IN')}</span></div>
+    <div class="r-row bal" style="background:${curBl>0?'#fee2e2':'#d1fae5'}"><span>Remaining Balance</span><span style="color:${curBl>0?'#DC2626':'#059669'}">${curBl>0?fmtC(curBl):'₹ 0.00 (Fully Paid)'}</span></div>
+    <div class="r-words">${n2w(p.amount)}</div>
+  </div>
+  <div class="r-sig">
+    <div><div class="r-sig-line">Student's Signature</div></div>
+    <div><div class="r-sig-line">Cashier / Accountant</div></div>
+    <div><div class="r-sig-line">Principal / Director</div></div>
+  </div>
+  <div class="r-foot">Computer generated receipt · Please retain for records · Generated: ${fmtDT(new Date().toISOString())}</div>
+</div>`;
+}
+
+function printRcp(pid){
+  const p=gPy().find(x=>x.id===pid);if(!p)return;
+  const s=gSt().find(x=>x.id===p.studentId);if(!s)return;
+  const se=gSe();const nf=netFees(s);const pd=paidTotal(s.id);const bl=Math.max(0,nf-pd);const prevPd=pd-p.amount;const prevBl=Math.max(0,nf-prevPd);
+  const el=e('pr-receipt');el.innerHTML=buildRcp(p,s,se,prevBl,bl,bl===0);el.style.display='block';
+  window.print();setTimeout(()=>{el.style.display='none'},1200);
+}
+
+// ══════════════════════════════════════════════════════════════
+// RECEIPTS PAGE
+// ══════════════════════════════════════════════════════════════
+function rReceipts(){
+  const sts=gSt();const stMap={};sts.forEach(s=>stMap[s.id]=s);
+  let pys=gPy().slice().sort((a,b)=>new Date(b.createdAt||b.paymentDate)-new Date(a.createdAt||a.paymentDate));
+  if(S.recSrch){const q=S.recSrch.toLowerCase();pys=pys.filter(p=>(p.receiptNo||'').toLowerCase().includes(q)||((stMap[p.studentId]&&stMap[p.studentId].name)||'').toLowerCase().includes(q)||(p.studentId||'').toLowerCase().includes(q))}
+  const rows=pys.slice(0,60).map(p=>{const s=stMap[p.studentId];return`<tr>
+    <td class="fw7 tw-pri">${esc(p.receiptNo)}</td>
+    <td>${fmtD(p.paymentDate)}</td>
+    <td><div class="fw7">${esc(s?s.name:'Unknown')}</div><div class="fs-sm tw-muted">${esc(p.studentId)}</div></td>
+    <td>${esc(p.feeHead||'-')}</td>
+    <td><span class="badge ${p.paymentMode==='Cash'?'b-ok':'b-inf'}">${esc(p.paymentMode)}</span></td>
+    <td class="fw7 tw-ok">${fmtC(p.amount)}</td>
+    <td>${esc(p.collectedBy||'-')}</td>
+    <td><button class="btn bp btn-sm" onclick="viewRcp('${p.id}')">${icon('receipt',14)} View / Print</button></td>
+  </tr>`}).join('')||`<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--muted)">No receipts found.</td></tr>`;
+
+  e('pc').innerHTML=`
+  <div class="sh"><span class="st">All Receipts (Reprint anytime)</span></div>
+  <div class="card" style="padding:13px;margin-bottom:13px">
+    <div class="sinp" style="max-width:380px"><span class="sico">${icon('search',15)}</span><input type="text" placeholder="Search receipt no, student name or ID..." value="${esc(S.recSrch)}" oninput="S.recSrch=this.value;rReceipts()"></div>
+  </div>
+  <div class="card"><div class="tw"><table><thead><tr><th>Receipt No</th><th>Date</th><th>Student</th><th>Fee Head</th><th>Mode</th><th>Amount</th><th>Collected By</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table></div>
+  ${pys.length>60?`<div style="padding:10px 14px;text-align:center;color:var(--muted);font-size:.8rem">Showing 60 of ${pys.length} receipts. Use search to find others.</div>`:''}</div>`;
+}
+
+// ══════════════════════════════════════════════════════════════
+// REPORTS
+// ══════════════════════════════════════════════════════════════
+function rReports(){
+  const t=S.rTab;
+  e('pc').innerHTML=`
+  <div class="tabs">
+    <button class="tab ${t==='monthly'?'active':''}" onclick="S.rTab='monthly';rReports()">${icon('calendar',15)} Monthly Collection</button>
+    <button class="tab ${t==='pending'?'active':''}" onclick="S.rTab='pending';rReports()">${icon('alert',15)} Pending Dues</button>
+    <button class="tab ${t==='ledger'?'active':''}" onclick="S.rTab='ledger';rReports()">${icon('receipt',15)} Student Ledger</button>
+    <button class="tab ${t==='summary'?'active':''}" onclick="S.rTab='summary';rReports()">${icon('chart',15)} Summary</button>
+  </div>
+  <div id="rc"></div>`;
+  ({monthly:rRptMonthly,pending:rRptPending,ledger:rRptLedger,summary:rRptSummary}[t]||rRptMonthly)();
+}
+
+function rRptMonthly(){
+  const se=gSe();const pys=gPy().filter(p=>p.session===se.currentSession);
+  const mo={};
+  pys.forEach(p=>{const m=(p.paymentDate||'').slice(0,7)||'Unknown';if(!mo[m])mo[m]={t:0,n:0,c:0,u:0,b:0,ch:0};mo[m].t+=parseFloat(p.amount)||0;mo[m].n++;if(p.paymentMode==='Cash')mo[m].c+=parseFloat(p.amount)||0;else if(p.paymentMode==='UPI')mo[m].u+=parseFloat(p.amount)||0;else if(p.paymentMode==='Bank Transfer')mo[m].b+=parseFloat(p.amount)||0;else if(p.paymentMode==='Cheque')mo[m].ch+=parseFloat(p.amount)||0});
+  window._mo=mo;
+  const tot=pys.reduce((s,p)=>s+(parseFloat(p.amount)||0),0);
+  const rows=Object.keys(mo).sort().reverse().map(m=>{const d=mo[m];const parts=m.split('-');const mn2=new Date(+parts[0],+parts[1]-1).toLocaleString('en-IN',{month:'long',year:'numeric'});return`<tr><td class="fw7">${mn2}</td><td>${d.n}</td><td>${fmtC(d.c)}</td><td>${fmtC(d.u)}</td><td>${fmtC(d.b)}</td><td>${fmtC(d.ch)}</td><td class="fw7 tw-ok">${fmtC(d.t)}</td></tr>`}).join('')||noData(7);
+  e('rc').innerHTML=`
+  <div class="sh"><span class="st">Monthly Collection · ${se.currentSession}</span><button class="btn bg btn-sm" onclick="expMoCSV()">${icon('download',14)} Export CSV</button></div>
+  <div class="card"><div class="tw"><table><thead><tr><th>Month</th><th>Transactions</th><th>Cash</th><th>UPI</th><th>Bank Transfer</th><th>Cheque</th><th>Total</th></tr></thead>
+  <tbody>${rows}<tr style="background:var(--bg);font-weight:700"><td>GRAND TOTAL</td><td>${pys.length}</td><td colspan="4"></td><td class="tw-ok">${fmtC(tot)}</td></tr></tbody></table></div></div>`;
+}
+function expMoCSV(){const mo=window._mo||{};const hdr=['Month','Transactions','Cash','UPI','Bank Transfer','Cheque','Total'];const rows=Object.keys(mo).sort().map(m=>{const d=mo[m];const parts=m.split('-');const mn2=new Date(+parts[0],+parts[1]-1).toLocaleString('en-IN',{month:'long',year:'numeric'});return[mn2,d.n,d.c.toFixed(2),d.u.toFixed(2),d.b.toFixed(2),d.ch.toFixed(2),d.t.toFixed(2)]});csvDl([hdr,...rows],'monthly_collection.csv')}
+
+function rRptPending(){
+  const se=gSe();
+  const sts=gSt().filter(s=>s.session===se.currentSession&&s.status==='Active');
+  const due=sts.map(s=>Object.assign({},s,{nf:netFees(s),pd:paidTotal(s.id),bl:balance(s.id)})).filter(s=>s.bl>0).sort((a,b)=>b.bl-a.bl);
+  window._due=due;const tot=due.reduce((s,x)=>s+x.bl,0);
+  const rows=due.map(s=>`<tr>
+    <td><div style="display:flex;align-items:center;gap:8px">${avatarEl(s)}<div><div class="fw7">${esc(s.name)}</div><div class="fs-sm tw-muted">${esc(s.id)} · ${esc(s.mobile||'-')}</div></div></div></td>
+    <td>${esc(s.course||'-')}</td>
+    <td class="fw7">${fmtC(s.nf)}</td>
+    <td class="tw-ok fw7">${fmtC(s.pd)}</td>
+    <td><span class="badge b-err">${fmtC(s.bl)}</span></td>
+    <td><button class="btn bp btn-sm" onclick="S.prefSid='${s.id}';nav('add-payment')">${icon('plus',13)} Collect</button></td>
+  </tr>`).join('')||`<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--muted)">${icon('check',26)}<br>No pending dues — all students are up to date!</td></tr>`;
+  e('rc').innerHTML=`
+  <div class="sh"><span class="st">Pending Dues · ${se.currentSession}</span><div style="display:flex;gap:8px"><span class="badge b-err" style="font-size:.84rem;padding:6px 12px">Total Due: ${fmtC(tot)}</span><button class="btn bg btn-sm" onclick="expDueCSV()">${icon('download',14)} Export CSV</button></div></div>
+  <div class="card"><div class="tw"><table><thead><tr><th>Student</th><th>Course</th><th>Net Fees</th><th>Paid</th><th>Balance Due</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+}
+function expDueCSV(){const due=window._due||[];const hdr=['ID','Name','Mobile','Course','Session','Net Fees','Paid','Balance Due'];const rows=due.map(s=>[s.id,s.name,s.mobile,s.course,s.session,s.nf.toFixed(2),s.pd.toFixed(2),s.bl.toFixed(2)]);csvDl([hdr,...rows],'pending_dues.csv')}
+
+function rRptLedger(){
+  const sts=gSt();const opts=sts.map(s=>`<option value="${s.id}" ${s.id===S.ledSid?'selected':''}>${esc(s.name)} (${s.id})</option>`).join('');
+  let ledger=`<div class="empty"><div class="ei">${icon('receipt',44,1.5)}</div><h3>Select a student to view their complete ledger</h3></div>`;
+  if(S.ledSid){
+    const s=sts.find(x=>x.id===S.ledSid);
+    if(s){
+      const pys=gPy().filter(p=>p.studentId===S.ledSid).sort((a,b)=>new Date(a.paymentDate)-new Date(b.paymentDate));
+      const nf=netFees(s);let run=0;
+      const pRows=pys.map(p=>{run+=parseFloat(p.amount)||0;const bl=Math.max(0,nf-run);return`<tr>
+        <td>${fmtD(p.paymentDate)}</td>
+        <td class="fw7 tw-pri">${esc(p.receiptNo)}</td>
+        <td>${esc(p.feeHead||'-')}</td>
+        <td>${esc(p.installment||'-')}</td>
+        <td><span class="badge ${p.paymentMode==='Cash'?'b-ok':'b-inf'}">${esc(p.paymentMode)}</span></td>
+        <td class="tw-ok fw7">${fmtC(p.amount)}</td>
+        <td class="tw-ok">${fmtC(run)}</td>
+        <td class="${bl>0?'tw-err fw7':'tw-ok'}">${bl>0?fmtC(bl):'NIL'}</td>
+        <td><button class="btn bo btn-icon" onclick="viewRcp('${p.id}')">${icon('receipt',13)}</button></td>
+      </tr>`}).join('')||`<tr><td colspan="9" style="text-align:center;padding:22px;color:var(--muted)">No payments recorded.</td></tr>`;
+      const bl=balance(S.ledSid);const pd=paidTotal(S.ledSid);
+      ledger=`<div class="card" style="margin-top:14px">
+        <div class="ch"><div><div class="ct">${esc(s.name)} — Ledger</div><div class="fs-sm tw-muted">${esc(s.id)} · ${esc(s.course)} · ${esc(s.session)}</div></div><button class="btn bg btn-sm" onclick="expLedCSV('${S.ledSid}')">${icon('download',14)} Export CSV</button></div>
+        <div style="padding:10px 16px;background:var(--bg);border-bottom:1px solid var(--bdr);display:flex;gap:18px;font-size:.84rem;flex-wrap:wrap">
+          <div>Total Fees: <strong>${fmtC(s.totalFees)}</strong></div>
+          ${s.scholarship?`<div>Scholarship: <strong class="tw-ok">-${fmtC(s.scholarship)}</strong></div>`:''}
+          ${s.discount?`<div>Discount: <strong class="tw-ok">-${fmtC(s.discount)}</strong></div>`:''}
+          <div>Net Payable: <strong>${fmtC(nf)}</strong></div>
+          <div>Total Paid: <strong class="tw-ok">${fmtC(pd)}</strong></div>
+          <div>Balance: <strong class="${bl>0?'tw-err':'tw-ok'}">${bl>0?fmtC(bl):'₹0 (Fully Paid)'}</strong></div>
+        </div>
+        <div class="tw"><table><thead><tr><th>Date</th><th>Receipt</th><th>Fee Head</th><th>Installment</th><th>Mode</th><th>Amount</th><th>Cumulative</th><th>Balance</th><th></th></tr></thead><tbody>${pRows}</tbody></table></div>
+      </div>`;
+    }
+  }
+  e('rc').innerHTML=`<div style="max-width:400px;margin-bottom:14px"><label style="font-weight:700;margin-bottom:6px;display:block">Select Student for Ledger</label>
+    <select onchange="S.ledSid=this.value;rRptLedger()"><option value="">-- Select Student --</option>${opts}</select></div>${ledger}`;
+}
+function expLedCSV(sid){const s=gSt().find(x=>x.id===sid);if(!s)return;const pys=gPy().filter(p=>p.studentId===sid).sort((a,b)=>new Date(a.paymentDate)-new Date(b.paymentDate));const nf=netFees(s);let run=0;const hdr=['Date','Receipt No','Fee Head','Installment','Mode','Amount','Cumulative Paid','Balance'];const rows=pys.map(p=>{run+=parseFloat(p.amount)||0;return[p.paymentDate,p.receiptNo,p.feeHead,p.installment,p.paymentMode,p.amount,run.toFixed(2),Math.max(0,nf-run).toFixed(2)]});csvDl([hdr,...rows],`ledger_${s.name.replace(/\s+/g,'_')}.csv`)}
+
+function rRptSummary(){
+  const se=gSe();const sess=se.currentSession;
+  const sts=gSt();const pys=gPy();const ssts=sts.filter(s=>s.session===sess);const spys=pys.filter(p=>p.session===sess);
+  const tF=ssts.reduce((s,x)=>s+netFees(x),0);const tC=spys.reduce((s,p)=>s+(parseFloat(p.amount)||0),0);const tD=Math.max(0,tF-tC);
+  const byH={},byM={},byCat={};
+  spys.forEach(p=>{const h=p.feeHead||'Other';byH[h]=(byH[h]||0)+(parseFloat(p.amount)||0);const m=p.paymentMode||'Unknown';byM[m]=(byM[m]||0)+(parseFloat(p.amount)||0)});
+  ssts.forEach(s=>{const c=s.category||'Other';if(!byCat[c])byCat[c]={n:0,f:0,p:0};byCat[c].n++;byCat[c].f+=netFees(s);byCat[c].p+=paidTotal(s.id)});
+  const hRows=Object.entries(byH).sort((a,b)=>b[1]-a[1]).map(x=>`<tr><td>${x[0]}</td><td class="fw7 tw-ok">${fmtC(x[1])}</td><td>${tC>0?Math.round(x[1]/tC*100):0}%</td></tr>`).join('')||noData(3);
+  const mRows=Object.entries(byM).map(x=>`<tr><td><span class="badge ${x[0]==='Cash'?'b-ok':'b-inf'}">${x[0]}</span></td><td class="fw7 tw-ok">${fmtC(x[1])}</td><td>${tC>0?Math.round(x[1]/tC*100):0}%</td></tr>`).join('')||noData(3);
+  const cRows=Object.entries(byCat).map(x=>{const c=x[0],d=x[1];return`<tr><td>${c}</td><td>${d.n}</td><td>${fmtC(d.f)}</td><td class="tw-ok fw7">${fmtC(d.p)}</td><td class="${d.f-d.p>0?'tw-err':'tw-ok'} fw7">${d.f-d.p>0?fmtC(d.f-d.p):'₹0'}</td></tr>`}).join('')||noData(5);
+  e('rc').innerHTML=`
+  <div class="sgrid" style="margin-bottom:18px">
+    <div class="sc bl"><div class="si">${icon('users',22)}</div><div><div class="sv">${ssts.length}</div><div class="sl">Students (${sess})</div></div></div>
+    <div class="sc gn"><div class="si">${icon('wallet',22)}</div><div><div class="sv">${fmtC(tC)}</div><div class="sl">Total Collected</div></div></div>
+    <div class="sc rd"><div class="si">${icon('alert',22)}</div><div><div class="sv">${fmtC(tD)}</div><div class="sl">Total Pending</div></div></div>
+    <div class="sc or"><div class="si">${icon('receipt',22)}</div><div><div class="sv">${spys.length}</div><div class="sl">Transactions</div></div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="ch"><span class="ct">Collection by Fee Head</span></div><div class="tw"><table><thead><tr><th>Fee Head</th><th>Amount</th><th>Share</th></tr></thead><tbody>${hRows}</tbody></table></div></div>
+    <div class="card"><div class="ch"><span class="ct">Collection by Payment Mode</span></div><div class="tw"><table><thead><tr><th>Mode</th><th>Amount</th><th>Share</th></tr></thead><tbody>${mRows}</tbody></table></div></div>
+  </div>
+  <div class="card" style="margin-top:16px"><div class="ch"><span class="ct">Category-wise Summary</span></div><div class="tw"><table><thead><tr><th>Category</th><th>Students</th><th>Net Fees</th><th>Collected</th><th>Pending</th></tr></thead><tbody>${cRows}</tbody></table></div></div>`;
+}
+const noData=n=>`<tr><td colspan="${n}" style="text-align:center;padding:20px;color:var(--muted)">No data available.</td></tr>`;
+
+// ══════════════════════════════════════════════════════════════
+// USERS
+// ══════════════════════════════════════════════════════════════
+function rUsers(){
+  if(S.user.role!=='admin'){e('pc').innerHTML=`<div class="empty"><div class="ei">${icon('lock',44,1.5)}</div><h3>Access Denied</h3><p>Only administrators can manage users.</p></div>`;return}
+  const users=gUs().slice().sort((a,b)=>(a.approved===b.approved?0:a.approved?-1:1));
+  const rows=users.map(u=>{
+    const pending=!u.approved;
+    return`<tr ${pending?'style="background:#fffbeb"':''}>
+    <td><div style="display:flex;align-items:center;gap:9px"><div class="uav" style="width:34px;height:34px;font-size:.84rem">${u.name.charAt(0).toUpperCase()}</div><div><div class="fw7">${esc(u.name)}</div><div class="fs-sm tw-muted">@${esc(u.username)}</div></div></div></td>
+    <td><span class="badge ${u.role==='admin'?'b-err':'b-inf'}">${u.role==='admin'?'Admin':'Staff'}</span></td>
+    <td>${pending?'<span class="badge b-warn">Pending Approval</span>':'<span class="badge b-ok">Active</span>'}</td>
+    <td>${fmtD(u.created)}</td>
+    <td><div class="iconbar">
+      ${pending?`<button class="btn bg btn-sm" onclick="approveUser('${u.id}')">${icon('check',13)} Approve</button>`:''}
+      ${u.id!==S.user.id?`<button class="btn bo btn-icon" title="Edit" onclick="showUModal('${u.id}')">${icon('edit',14)}</button><button class="btn br btn-icon" title="Revoke access" onclick="delUser('${u.id}')">${icon('trash',14)}</button>`:'<span class="fs-sm tw-muted">(you)</span>'}
+    </div></td>
+  </tr>`}).join('');
+  e('pc').innerHTML=`
+  <div class="sh"><span class="st">User Management</span></div>
+  <div class="alert a-inf">${icon('bell',15)}<span>To add someone new, create them in Supabase under <strong>Authentication → Users → Add User</strong> (tick <strong>Auto Confirm User</strong>) and give them that email + password. The first time they log into this app, they'll show up below automatically — approve them here if they're not an admin already.</span></div>
+  <div class="card" style="margin-bottom:16px"><div class="tw"><table><thead><tr><th>User</th><th>Role</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead><tbody>${rows||noData(5)}</tbody></table></div></div>
+  <div class="card"><div class="ch"><span class="ct">How access works</span></div><div class="cb">
+    <div class="g2">
+      <div><div style="font-weight:700;color:var(--err);margin-bottom:7px">Admin</div><div style="font-size:.84rem;line-height:2">Full access to all features<br>Add / Edit / Delete students<br>Add / Delete payments<br>Manage users &amp; settings<br>View all reports &amp; audit log</div></div>
+      <div><div style="font-weight:700;color:var(--inf);margin-bottom:7px">Staff (Office)</div><div style="font-size:.84rem;line-height:2">Add new students<br>Record payments<br>Print / view receipts<br>View all reports<br><span class="tw-err">Cannot delete records</span><br><span class="tw-err">Cannot manage users/settings</span></div></div>
+    </div>
+    <div class="alert a-inf" style="margin-top:14px;margin-bottom:0">${icon('bell',15)}<span>These rules are enforced by the database itself, not just this screen — so they hold even if someone tries to access the data directly. The very first person ever to log in becomes admin automatically; everyone after that starts as <strong>Pending Approval</strong> until you approve them here, even though you created their login yourself in Supabase.</span></div>
+  </div></div>`;
+}
+
+async function approveUser(uid){
+  try{
+    await dbApproveUser(uid);addLog('APPROVE_USR',`Approved user ${uid}`);
+    showToast('User approved.','ok');rUsers();
+  }catch(err){showToast('Approve failed: '+friendlySbError(err),'error')}
+}
+
+function showUModal(uid){
+  const u=gUs().find(x=>x.id===uid);if(!u)return;
+  showModal('u-modal',`
+    <div class="mh"><span class="mt">Edit User</span><button class="bcl" onclick="closeM()">${icon('x',18)}</button></div>
+    <div class="mb2">
+      <div class="fg"><label class="req">Full Name</label><input type="text" id="u-nm" value="${esc(u.name||'')}"></div>
+      <div class="fg"><label class="req">Role</label><select id="u-rl"><option value="staff" ${u.role==='staff'?'selected':''}>Staff (Office)</option><option value="admin" ${u.role==='admin'?'selected':''}>Admin (Full Access)</option></select></div>
+      <p class="hint">Email and password are managed in Supabase, not here. Password changes are self-service — the user can change their own from the sidebar once logged in.</p>
+      <div id="u-err" class="alert a-err" style="display:none"></div>
+    </div>
+    <div class="mf"><button class="btn bo" onclick="closeM()">Cancel</button><button class="btn bp" id="user-save-btn" onclick="svEditUser('${uid}')">Save</button></div>
+  `,'modal-sm');
+}
+
+async function svEditUser(uid){
+  const nm=e('u-nm').value.trim(),rl=e('u-rl').value;
+  const er=e('u-err');er.style.display='none';
+  if(!nm){er.textContent='Please enter a name.';er.style.display='flex';return}
+  setBusy('user-save-btn',true);
+  try{
+    await dbUpdateUserName(uid,nm);await dbUpdateUserRole(uid,rl);
+    addLog('EDIT_USR',`Edited user ${nm}`);
+    showToast('User updated.','ok');closeM();rUsers();
+  }catch(err){setBusy('user-save-btn',false);er.textContent=friendlySbError(err);er.style.display='flex'}
+}
+
+async function delUser(uid){
+  if(uid===S.user.id){showToast('Cannot delete your own account.','error');return}
+  const u=gUs().find(x=>x.id===uid);
+  const ok=await askConfirm({title:'Revoke Access',danger:true,confirmLabel:'Revoke Access',message:`Remove "${u?u.name:''}" from this app? They will immediately lose access to all data. (This removes their profile; to fully delete their login from Supabase too, do that once from your Supabase dashboard.)`});
+  if(!ok)return;
+  try{
+    await dbDeleteUser(uid);addLog('DEL_USR',`Removed user ${u?u.name:''}`);
+    showToast('Access revoked.','ok');rUsers();
+  }catch(err){showToast('Failed: '+friendlySbError(err),'error')}
+}
+
+// ── Self-service password change (any logged-in cloud user) ──
+function showChangePwModal(){
+  showModal('pw-modal',`
+    <div class="mh"><span class="mt">${icon('lock',18)} Change My Password</span><button class="bcl" onclick="closeM()">${icon('x',18)}</button></div>
+    <div class="mb2">
+      <div class="fg"><label class="req">New Password</label><input type="password" id="pw-new" placeholder="At least 6 characters"></div>
+      <div class="fg"><label class="req">Confirm New Password</label><input type="password" id="pw-new2" placeholder="Re-enter password"></div>
+      <div id="pw-err" class="alert a-err" style="display:none"></div>
+    </div>
+    <div class="mf"><button class="btn bo" onclick="closeM()">Cancel</button><button class="btn bp" id="pw-save-btn" onclick="svChangePw()">Update Password</button></div>
+  `,'modal-sm');
+}
+async function svChangePw(){
+  const p1=e('pw-new').value,p2=e('pw-new2').value;const er=e('pw-err');er.style.display='none';
+  if(p1.length<6){er.textContent='Password must be at least 6 characters.';er.style.display='flex';return}
+  if(p1!==p2){er.textContent='Passwords do not match.';er.style.display='flex';return}
+  setBusy('pw-save-btn',true);
+  try{
+    await changeOwnPassword(p1);
+    showToast('Password updated.','ok');closeM();
+  }catch(err){setBusy('pw-save-btn',false);er.textContent=friendlySbError(err);er.style.display='flex'}
+}
+
+// ══════════════════════════════════════════════════════════════
+// SETTINGS
+// ══════════════════════════════════════════════════════════════
+function rSettings(){
+  if(S.user.role!=='admin'){e('pc').innerHTML=`<div class="empty"><div class="ei">${icon('lock',44,1.5)}</div><h3>Access Denied</h3><p>Only administrators can access settings.</p></div>`;return}
+  const se=gSe();
+  e('pc').innerHTML=`
+  <div style="max-width:760px">
+
+  <div class="card" style="margin-bottom:14px"><div class="ch"><span class="ct">College Information</span></div><div class="cb">
+    <div style="display:flex;gap:18px;align-items:flex-start;margin-bottom:18px;flex-wrap:wrap">
+      <div>
+        <div style="width:76px;height:76px;background:var(--bg);border:2px dashed var(--bdr);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;color:var(--muted)" id="logo-area" onclick="e('logo-inp').click()">
+          ${se.logo?`<img src="${se.logo}" style="width:100%;height:100%;object-fit:contain">`:icon('camera',26,1.5)}
+        </div>
+        <p style="font-size:.66rem;color:var(--muted);text-align:center;margin-top:4px">College Logo</p>
+        <input type="file" id="logo-inp" accept="image/*" style="display:none" onchange="handleLogo(this)">
+      </div>
+      <div style="flex:1;min-width:220px">
+        <div class="fg"><label class="req">College Name</label><input type="text" id="s-cnm" value="${esc(se.collegeName)}"></div>
+        <div class="fg"><label>Affiliated To</label><input type="text" id="s-afl" value="${esc(se.affiliatedTo||'')}" placeholder="University / Board"></div>
+      </div>
+    </div>
+    <div class="fg"><label>Address</label><textarea id="s-addr">${esc(se.address)}</textarea></div>
+    <div class="fr">
+      <div class="fg"><label>Phone / Mobile</label><input type="text" id="s-ph" value="${esc(se.phone)}"></div>
+      <div class="fg"><label>Email</label><input type="email" id="s-em" value="${esc(se.email)}"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label>Registration / Recognition No</label><input type="text" id="s-rg" value="${esc(se.regNo||'')}"></div>
+      <div class="fg"><label class="req">Current Session</label><select id="s-sess">${SESSIONS.map(x=>`<option value="${x}" ${se.currentSession===x?'selected':''}>${x}</option>`).join('')}</select></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end"><button class="btn bp" id="settings-save-btn" onclick="svSettings()">${icon('check',15)} Save Settings</button></div>
+  </div></div>
+
+  <div class="card" style="margin-bottom:14px"><div class="ch"><span class="ct">Backup &amp; Restore</span></div><div class="cb">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+      <button class="btn bg" onclick="doBackup()">${icon('download',14)} Download Full Backup</button>
+      <button class="btn bo" onclick="e('rst-inp').click()">${icon('upload',14)} Restore from Backup</button>
+      <input type="file" id="rst-inp" accept=".json" style="display:none" onchange="doRestore(this)">
+    </div>
+    <p class="fs-sm tw-muted">Backs up students, payments and college settings as a file you keep yourself. Accounts aren't included — logins live securely in Supabase, not in a file.</p>
+  </div></div>
+
+  <div class="card"><div class="ch"><span class="ct">Recent Audit Log</span></div>
+  <div class="tw"><table><thead><tr><th>Time</th><th>User</th><th>Action</th><th>Details</th></tr></thead><tbody>
+    ${gLog().slice(0,25).map(l=>`<tr><td class="fs-sm tw-muted">${fmtDT(l.ts)}</td><td>${esc(l.by)}</td><td><span class="badge b-pri">${esc(l.action)}</span></td><td class="fs-sm">${esc(l.det)}</td></tr>`).join('')||noData(4)}
+  </tbody></table></div></div>
+  </div>`;
+}
+
+function handleLogo(inp){const f=inp.files[0];if(!f)return;if(f.size>1048576){showToast('Logo must be under 1MB.','error');return}const r=new FileReader();r.onload=ev=>{document.getElementById('logo-area').innerHTML=`<img src="${ev.target.result}" style="width:100%;height:100%;object-fit:contain">`;S.logoB64=ev.target.result};r.readAsDataURL(f)}
+
+async function svSettings(){
+  const se=gSe();const ns=Object.assign({},se,{collegeName:e('s-cnm').value.trim()||se.collegeName,affiliatedTo:e('s-afl').value.trim(),address:e('s-addr').value.trim(),phone:e('s-ph').value.trim(),email:e('s-em').value.trim(),regNo:e('s-rg').value.trim(),currentSession:e('s-sess').value,logo:S.logoB64||se.logo});
+  setBusy('settings-save-btn',true);
+  try{
+    await dbSaveSettings(ns);S.logoB64=null;
+    e('sb-cname').textContent=ns.collegeName;
+    const initial=(ns.collegeName||'B').trim().charAt(0).toUpperCase();
+    e('sb-logo-img').textContent=initial;e('lc-mono').textContent=initial;
+    updateSessBadge();addLog('SETTINGS','Updated college settings');
+    showToast('Settings saved!','ok');
+  }catch(err){showToast('Save failed: '+friendlySbError(err),'error')}
+  setBusy('settings-save-btn',false);
+}
+
+function doBackup(){
+  const bk={v:'2.0',ts:new Date().toISOString(),students:gSt(),payments:gPy(),settings:gSe()};
+  const b=new Blob([JSON.stringify(bk,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=`college_backup_${today()}.json`;a.click();URL.revokeObjectURL(u);
+  addLog('BACKUP','Data backup downloaded');showToast('Backup downloaded.','ok');
+}
+
+async function doRestore(inp){
+  const f=inp.files[0];if(!f)return;
+  const ok=await askConfirm({title:'Restore Backup',danger:true,confirmLabel:'Restore',message:'Restoring will REPLACE all current students, payments and settings in your connected database. This cannot be undone. Are you absolutely sure?',requireText:'RESTORE'});
+  if(!ok){inp.value='';return}
+  const r=new FileReader();
+  r.onload=async ev=>{
+    try{
+      const d=JSON.parse(ev.target.result);
+      if(d.students)await bulkUpsert('students',d.students,STU_MAP);
+      if(d.payments)await bulkUpsert('payments',d.payments,PAY_MAP);
+      if(d.settings)await dbSaveSettings(d.settings);
+      await loadAllData();
+      addLog('RESTORE','Data restored from backup');
+      showToast('Data restored! Reloading...','ok');
+      setTimeout(()=>location.reload(),1200);
+    }catch(err){showToast('Invalid backup file or restore error: '+(err.message||err),'error')}
+  };
+  r.readAsText(f);
+}
+
+// ══════════════════════════════════════════════════════════════
+// BULK UPLOAD
+// ══════════════════════════════════════════════════════════════
+function rBulkUpload(){
+  e('pc').innerHTML=`
+  <div style="max-width:820px">
+  <div class="card" style="margin-bottom:14px"><div class="ch"><span class="ct">Bulk Upload Students via CSV</span></div><div class="cb">
+    <div class="alert a-inf">${icon('bell',16)}
+      <div><strong>How to use:</strong>
+        <ol style="margin:7px 0 0 16px;line-height:1.9">
+          <li>Click <strong>Download Sample CSV</strong> to get the template file</li>
+          <li>Open it in Excel / Google Sheets and fill student data</li>
+          <li>Do not change the column headers</li>
+          <li>Save as CSV and upload below</li>
+          <li>Review the preview and click Import</li>
+        </ol>
+      </div>
+    </div>
+    <div style="margin-bottom:18px"><button class="btn bg" onclick="dlSample()">${icon('download',15)} Download Sample CSV Template</button></div>
+    <div style="border:2px dashed var(--bdr);border-radius:8px;padding:36px;text-align:center;cursor:pointer;background:var(--bg);transition:border-color .15s"
+      id="drop-zone"
+      onclick="e('csv-inp').click()"
+      ondragover="event.preventDefault();this.style.borderColor='var(--pri)'"
+      ondragleave="this.style.borderColor='var(--bdr)'"
+      ondrop="event.preventDefault();this.style.borderColor='var(--bdr)';handleDrop(event)">
+      <div style="margin-bottom:8px;color:var(--muted);display:flex;justify-content:center">${icon('upload',38,1.5)}</div>
+      <div class="fw7">Click here or drag &amp; drop your CSV file</div>
+      <div class="fs-sm tw-muted" style="margin-top:4px">Accepts .csv files only</div>
+      <input type="file" id="csv-inp" accept=".csv" style="display:none" onchange="handleCSV(this)">
+    </div>
+  </div></div>
+  <div id="csv-prev"></div>
+  </div>`;
+}
+
+function dlSample(){
+  const hdr=['student_id','admission_no','full_name','father_name','mother_name','mobile','address','course','session','year','semester','category','date_of_admission','total_fees','scholarship','discount','status'];
+  const s1=['STU001','ADM2024001','Rahul Kumar Singh','Ram Prasad Singh','Sunita Devi','9876543210','Village Rampur, Block X, District Y, State – 000000','B.Ed','2024-2025','1st Year','1st Semester','General','2024-07-01','50000','5000','0','Active'];
+  const s2=['STU002','ADM2024002','Priya Sharma','Suresh Sharma','Meena Sharma','9898989898','Ward No. 5, Town Z, State – 000001','B.Ed','2024-2025','1st Year','1st Semester','OBC','2024-07-02','50000','0','2000','Active'];
+  csvDl([hdr,s1,s2],'student_upload_sample.csv');
+}
+
+function handleDrop(ev){const f=ev.dataTransfer.files[0];if(f&&f.name.endsWith('.csv'))procCSV(f);else showToast('Please drop a .csv file.','error')}
+function handleCSV(inp){if(inp.files[0])procCSV(inp.files[0])}
+
+function procCSV(f){
+  const r=new FileReader();r.onload=ev=>{
+    const lines=ev.target.result.split('\n').map(l=>l.trim()).filter(Boolean);
+    if(lines.length<2){showToast('CSV must have at least header row + 1 data row.','error');return}
+    const hdrs=lines[0].split(',').map(h=>h.replace(/"/g,'').trim().toLowerCase());
+    const rows=lines.slice(1).map(ln=>{const vals=parseCSVLn(ln);const o={};hdrs.forEach((h,i)=>o[h]=(vals[i]||'').trim());return o}).filter(r=>r.full_name);
+    showCSVPrev(rows);
+  };r.readAsText(f);
+}
+
+function parseCSVLn(ln){const res=[];let cur='',q=false;for(let i=0;i<ln.length;i++){const c=ln[i];if(c==='"')q=!q;else if(c===','&&!q){res.push(cur);cur=''}else cur+=c}res.push(cur);return res}
+
+function showCSVPrev(rows){
+  const ex=gSt();const exIds=new Set(ex.map(s=>s.id));const exAd=new Set(ex.map(s=>s.admissionNo).filter(Boolean));
+  const annotated=rows.map(r=>{const dup=exIds.has(r.student_id)||(r.admission_no&&exAd.has(r.admission_no));return Object.assign({},r,{_dup:dup})});
+  const good=annotated.filter(r=>!r._dup).length;
+  const pRows=annotated.slice(0,12).map(r=>`<tr ${r._dup?'style="background:#fff1f2"':''}>
+    <td>${r._dup?'<span class="badge b-err">SKIP</span>':'<span class="badge b-ok">OK</span>'}</td>
+    <td>${esc(r.student_id||'-')}</td><td>${esc(r.full_name||'-')}</td>
+    <td>${esc(r.father_name||'-')}</td><td>${esc(r.mobile||'-')}</td>
+    <td>${esc(r.course||'-')}</td><td>${esc(r.session||'-')}</td>
+    <td>${esc(r.total_fees||'-')}</td>
+  </tr>`).join('');
+  window._csvRows=annotated;
+  e('csv-prev').innerHTML=`
+  <div class="card">
+    <div class="ch"><span class="ct">Preview — ${annotated.length} rows found, ${good} will be imported</span></div>
+    ${annotated.some(r=>r._dup)?`<div class="alert a-warn" style="margin:12px 12px 0">${icon('alert',15)}<span>Rows marked SKIP already exist (duplicate ID or admission number).</span></div>`:''}
+    <div class="tw"><table><thead><tr><th>Status</th><th>Student ID</th><th>Name</th><th>Father</th><th>Mobile</th><th>Course</th><th>Session</th><th>Fees</th></tr></thead><tbody>${pRows}</tbody></table></div>
+    ${annotated.length>12?`<div style="padding:8px 14px;font-size:.78rem;color:var(--muted)">... and ${annotated.length-12} more rows</div>`:''}
+    <div style="padding:12px 14px;display:flex;justify-content:flex-end;gap:10px">
+      <button class="btn bo" onclick="e('csv-prev').innerHTML=''">Cancel</button>
+      <button class="btn bp" id="import-btn" onclick="doImport()">${icon('check',15)} Import ${good} Students</button>
+    </div>
+  </div>`;
+}
+
+async function doImport(){
+  const rows=window._csvRows||[];const se=gSe();
+  const ex=gSt();const exIds=new Set(ex.map(s=>s.id));const exAd=new Set(ex.map(s=>s.admissionNo).filter(Boolean));
+  let allIds=ex.map(s=>s.id); // grows as we assign new ids within this batch, so auto-generated ids never collide with each other
+  const yrPfx='STU'+(se.currentSession||'2024-2025').split('-')[0].slice(-2);
+  let added=0,skipped=0;const toAdd=[];
+  rows.forEach(r=>{
+    if(r._dup){skipped++;return}
+    let id=(r.student_id||'').trim();
+    if(!id)id=yrPfx+String(seqFromIds(allIds,yrPfx)).padStart(3,'0');
+    if(exIds.has(id)){skipped++;return}
+    if(r.admission_no&&exAd.has(r.admission_no)){skipped++;return}
+    toAdd.push({id,admissionNo:r.admission_no||'',name:r.full_name||'',fatherName:r.father_name||'',motherName:r.mother_name||'',mobile:r.mobile||'',address:r.address||'',course:r.course||'B.Ed',session:r.session||se.currentSession,year:r.year||'1st Year',semester:r.semester||'1st Semester',category:r.category||'General',dateOfAdmission:r.date_of_admission||today(),totalFees:parseFloat(r.total_fees)||0,scholarship:parseFloat(r.scholarship)||0,discount:parseFloat(r.discount)||0,status:r.status||'Active',photo:null,createdAt:new Date().toISOString()});
+    exIds.add(id);allIds.push(id);if(r.admission_no)exAd.add(r.admission_no);added++;
+  });
+  setBusy('import-btn',true,'Importing...');
+  try{
+    await dbBulkAddStudents(toAdd);
+    addLog('BULK_IMP',`Imported ${added}, skipped ${skipped}`);
+    showToast(`Import complete — added ${added}, skipped ${skipped} duplicate(s).`,'ok',5000);
+    nav('students');
+  }catch(err){setBusy('import-btn',false);showToast('Import failed: '+friendlySbError(err),'error')}
+}
+
+// ══════════════════════════════════════════════════════════════
+// MODAL
+// ══════════════════════════════════════════════════════════════
+function showModal(id,html,cls){
+  e('mcont').innerHTML=`<div class="mover" onclick="closeOnOv(event)"><div class="modal ${cls||''}" id="${id}">${html}</div></div>`;
+}
+function closeOnOv(ev){if(ev.target===ev.currentTarget)closeM()}
+function closeM(){e('mcont').innerHTML=''}
+
+// ══════════════════════════════════════════════════════════════
+// KEYBOARD
+// ══════════════════════════════════════════════════════════════
+document.addEventListener('keydown',ev=>{
+  if(ev.key==='Escape')closeM();
+});
+window.addEventListener('resize',()=>{
+  const m=window.innerWidth<768;
+  const b=e('mnu-btn');if(b)b.style.display=m?'flex':'none';
+});
+
+// ══════════════════════════════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════════════════════════════
+function showSetupNeeded(msg){
+  e('login-fields').style.display='none';
+  e('setup-needed').style.display='block';
+  e('setup-needed-msg').textContent=msg;
+}
+
+async function boot(){
+  const bl=e('boot-loader');
+  if(SUPABASE_URL.indexOf('YOUR_SUPABASE')===0||SUPABASE_ANON_KEY.indexOf('YOUR_SUPABASE')===0){
+    if(bl)bl.style.display='none';
+    showSetupNeeded('This app hasn\'t been connected to a database yet. Open this file in a text editor, fill in SUPABASE_URL and SUPABASE_ANON_KEY near the top of the code with your Supabase project\'s values, save, and reopen it.');
+    e('login-page').style.display='flex';
+    return;
+  }
+  try{
+    const ok=await tryInitSupabase();
+    if(!ok){
+      if(bl)bl.style.display='none';
+      showSetupNeeded(SB_LAST_ERROR||'Could not connect to the database. Check your internet connection.');
+      e('login-page').style.display='flex';
+      return;
+    }
+    const hasSession=await checkExistingSession();
+    if(bl)bl.style.display='none';
+    if(hasSession){showApp();return}
+    e('login-page').style.display='flex';
+  }catch(err){
+    console.error('Boot error',err);
+    if(bl)bl.style.display='none';
+    showSetupNeeded(friendlySbError(err));
+    e('login-page').style.display='flex';
+  }
+  if(window.innerWidth<768){const b=e('mnu-btn');if(b)b.style.display='flex'}
+}
+boot();
+</script>
+</body>
+</html>
