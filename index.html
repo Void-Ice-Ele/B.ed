@@ -782,6 +782,7 @@ const TITLES={dash:'Dashboard',students:'Students','add-student':'Add New Studen
 
 function nav(pg){
   if((pg==='users'||pg==='settings')&&S.user&&S.user.role!=='admin')pg='dash';
+  if(pg==='add-payment'&&S.user&&S.user.role!=='admin'){pg='payments';showToast('Only an admin can record payments. You can view and print receipts here.','info')}
   S.page=pg;
   document.querySelectorAll('.ni').forEach(el=>el.classList.toggle('active',el.dataset.p===pg||(pg==='add-student'&&el.dataset.p==='students')||(pg==='bulk-upload'&&el.dataset.p==='students')||(pg==='add-payment'&&el.dataset.p==='payments')||(pg==='edit-student'&&el.dataset.p==='students')||(pg==='student-detail'&&el.dataset.p==='students')));
   e('page-title').textContent=TITLES[pg]||pg;
@@ -819,10 +820,11 @@ function rDash(){
     <td><button class="btn bo btn-icon" title="View Receipt" onclick="viewRcp('${p.id}')">${icon('receipt',15)}</button></td>
   </tr>`}).join('')||`<tr><td colspan="6" style="text-align:center;padding:22px;color:var(--muted)">No payments in current session yet.</td></tr>`;
 
+  const isAdm=S.user.role==='admin';
   const dRows=topDues.map(s=>`<tr>
     <td><div style="display:flex;align-items:center;gap:7px">${avatarEl(s)}<div><div class="fw7">${esc(s.name)}</div><div class="fs-sm tw-muted">${esc(s.id)}</div></div></div></td>
     <td><span class="badge b-err">${fmtC(balance(s.id))}</span></td>
-    <td><button class="btn bp btn-sm" onclick="S.prefSid='${s.id}';nav('add-payment')">${icon('plus',13)} Pay</button></td>
+    <td>${isAdm?`<button class="btn bp btn-sm" onclick="S.prefSid='${s.id}';nav('add-payment')">${icon('plus',13)} Pay</button>`:''}</td>
   </tr>`).join('')||`<tr><td colspan="3" style="text-align:center;padding:22px;color:var(--muted)">${icon('check',26)}<br>No pending dues!</td></tr>`;
 
   e('pc').innerHTML=`
@@ -877,8 +879,7 @@ function rStudents(){
       <td class="${b>0?'tw-err fw7':'tw-ok'}">${b>0?fmtC(b):'Paid'}</td>
       <td><div class="iconbar">
         <button class="btn bo btn-icon" title="View" onclick="S.viewSid='${s.id}';nav('student-detail')">${icon('eye',15)}</button>
-        <button class="btn bp btn-icon" title="Add Payment" onclick="S.prefSid='${s.id}';nav('add-payment')">${icon('card',15)}</button>
-        ${S.user.role==='admin'?`<button class="btn bo btn-icon" title="Edit" onclick="S.editSid='${s.id}';nav('edit-student')">${icon('edit',14)}</button><button class="btn br btn-icon" title="Delete" onclick="delStu('${s.id}')">${icon('trash',14)}</button>`:''}
+        ${S.user.role==='admin'?`<button class="btn bp btn-icon" title="Add Payment" onclick="S.prefSid='${s.id}';nav('add-payment')">${icon('card',15)}</button><button class="btn bo btn-icon" title="Edit" onclick="S.editSid='${s.id}';nav('edit-student')">${icon('edit',14)}</button><button class="btn br btn-icon" title="Delete" onclick="delStu('${s.id}')">${icon('trash',14)}</button>`:''}
       </div></td>
     </tr>`;
   }).join('')||`<tr><td colspan="8"><div class="empty"><div class="ei">${icon('users',44,1.5)}</div><h3>No students found</h3><p>Try different filters or <a href="#" onclick="nav('add-student');return false">add a student</a></p></div></td></tr>`;
@@ -1090,8 +1091,7 @@ function rStudentDetail(){
             </div>
           </div>
           <div style="display:flex;gap:7px;flex-wrap:wrap">
-            <button class="btn bp btn-sm" onclick="S.prefSid='${s.id}';nav('add-payment')">${icon('plus',14)} Add Payment</button>
-            ${S.user.role==='admin'?`<button class="btn bo btn-sm" onclick="S.editSid='${s.id}';nav('edit-student')">${icon('edit',13)} Edit</button>`:''}
+            ${S.user.role==='admin'?`<button class="btn bp btn-sm" onclick="S.prefSid='${s.id}';nav('add-payment')">${icon('plus',14)} Add Payment</button><button class="btn bo btn-sm" onclick="S.editSid='${s.id}';nav('edit-student')">${icon('edit',13)} Edit</button>`:''}
             <button class="btn bo btn-sm" onclick="nav('students')">Back</button>
           </div>
         </div>
@@ -1122,7 +1122,7 @@ function rStudentDetail(){
     <div class="pbar"><div class="pfill" style="width:${pct}%;background:${pct>=100?'var(--ok)':'var(--pri)'}"></div></div>
     ${s.discount?`<div style="margin-top:7px;font-size:.76rem;color:var(--muted)">Total: ${fmtC(s.totalFees)} · Discount: -${fmtC(s.discount)} → Net: ${fmtC(nf)}</div>`:''}
   </div></div>
-  <div class="card"><div class="ch"><span class="ct">Payment History (${pys.length})</span><button class="btn bp btn-sm" onclick="S.prefSid='${s.id}';nav('add-payment')">${icon('plus',14)} Add Payment</button></div>
+  <div class="card"><div class="ch"><span class="ct">Payment History (${pys.length})</span>${S.user.role==='admin'?`<button class="btn bp btn-sm" onclick="S.prefSid='${s.id}';nav('add-payment')">${icon('plus',14)} Add Payment</button>`:''}</div>
   <div class="tw"><table><thead><tr><th>Receipt</th><th>Date</th><th>Fee Head</th><th>Installment</th><th>Mode</th><th>Amount</th><th>Collected By</th><th>Action</th></tr></thead><tbody>${pRows}</tbody></table></div>
   </div></div>`;
 }
@@ -1158,7 +1158,7 @@ function rPayments(){
 
   e('pc').innerHTML=`
   <div class="sh"><span class="st">Payments (${pys.length}) · Total: ${fmtC(tot)}</span>
-    <div style="display:flex;gap:7px"><button class="btn bg btn-sm" onclick="expPayCSV()">${icon('download',14)} Export CSV</button><button class="btn bp" onclick="nav('add-payment')">${icon('plus',15)} Add Payment</button></div>
+    <div style="display:flex;gap:7px"><button class="btn bg btn-sm" onclick="expPayCSV()">${icon('download',14)} Export CSV</button>${S.user.role==='admin'?`<button class="btn bp" onclick="nav('add-payment')">${icon('plus',15)} Add Payment</button>`:''}</div>
   </div>
   <div class="card" style="padding:13px;margin-bottom:13px">
     <div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center">
@@ -1201,6 +1201,7 @@ async function delPay(id,from){
 // ADD PAYMENT
 // ══════════════════════════════════════════════════════════════
 function rAddPayment(){
+  if(S.user.role!=='admin'){e('pc').innerHTML=`<div class="empty"><div class="ei">${icon('lock',44,1.5)}</div><h3>Access Denied</h3><p>Only administrators can record payments. You can still view and print receipts.</p></div>`;return}
   const se=gSe();
   const sts=gSt().filter(s=>s.status==='Active');
   const pre=S.prefSid||'';S.prefSid=null;
@@ -1455,7 +1456,7 @@ function rRptPending(){
     <td class="fw7">${fmtC(s.nf)}</td>
     <td class="tw-ok fw7">${fmtC(s.pd)}</td>
     <td><span class="badge b-err">${fmtC(s.bl)}</span></td>
-    <td><button class="btn bp btn-sm" onclick="S.prefSid='${s.id}';nav('add-payment')">${icon('plus',13)} Collect</button></td>
+    <td>${S.user.role==='admin'?`<button class="btn bp btn-sm" onclick="S.prefSid='${s.id}';nav('add-payment')">${icon('plus',13)} Collect</button>`:''}</td>
   </tr>`).join('')||`<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--muted)">${icon('check',26)}<br>No pending dues — all students are up to date!</td></tr>`;
   e('rc').innerHTML=`
   <div class="sh"><span class="st">Pending Dues · ${se.currentSession}</span><div style="display:flex;gap:8px"><span class="badge b-err" style="font-size:.84rem;padding:6px 12px">Total Due: ${fmtC(tot)}</span><button class="btn bg btn-sm" onclick="expDueCSV()">${icon('download',14)} Export CSV</button></div></div>
@@ -1550,8 +1551,8 @@ function rUsers(){
   <div class="card" style="margin-bottom:16px"><div class="tw"><table><thead><tr><th>User</th><th>Role</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead><tbody>${rows||noData(5)}</tbody></table></div></div>
   <div class="card"><div class="ch"><span class="ct">How access works</span></div><div class="cb">
     <div class="g2">
-      <div><div style="font-weight:700;color:var(--err);margin-bottom:7px">Admin</div><div style="font-size:.84rem;line-height:2">Full access to all features<br>Add / Edit / Delete students<br>Add / Delete payments<br>Manage users &amp; settings<br>View all reports &amp; audit log</div></div>
-      <div><div style="font-weight:700;color:var(--inf);margin-bottom:7px">Staff (Office)</div><div style="font-size:.84rem;line-height:2">Add new students<br>Record payments<br>Print / view receipts<br>View all reports<br><span class="tw-err">Cannot delete records</span><br><span class="tw-err">Cannot manage users/settings</span></div></div>
+      <div><div style="font-weight:700;color:var(--err);margin-bottom:7px">Admin</div><div style="font-size:.84rem;line-height:2">Full access to all features<br>Add / Edit / Delete students<br>Record, edit &amp; delete payments<br>Manage users &amp; settings<br>View all reports &amp; audit log</div></div>
+      <div><div style="font-weight:700;color:var(--inf);margin-bottom:7px">Staff (Office)</div><div style="font-size:.84rem;line-height:2">Add new students<br>View payments, print / reprint receipts<br>View all reports<br><span class="tw-err">Cannot record or delete payments</span><br><span class="tw-err">Cannot delete records</span><br><span class="tw-err">Cannot manage users/settings</span></div></div>
     </div>
     <div class="alert a-inf" style="margin-top:14px;margin-bottom:0">${icon('bell',15)}<span>These rules are enforced by the database itself, not just this screen — so they hold even if someone tries to access the data directly. The very first person ever to log in becomes admin automatically; everyone after that starts as <strong>Pending Approval</strong> until you approve them here, even though you created their login yourself in Supabase.</span></div>
   </div></div>`;
