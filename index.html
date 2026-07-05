@@ -112,6 +112,7 @@ tr:last-child td{border-bottom:none}
 .b-ok{background:var(--ok-bg);color:#065f46}.b-err{background:var(--err-bg);color:#991b1b}
 .b-warn{background:var(--warn-bg);color:#92400e}.b-inf{background:var(--inf-bg);color:#075985}
 .b-pri{background:rgba(27,58,107,.1);color:var(--pri)}.b-gray{background:#f1f5f9;color:var(--muted)}
+.b-gold{background:rgba(245,166,35,.16);color:var(--acc-d);border:1px solid rgba(245,166,35,.4)}
 
 /* ── BUTTONS ── */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:7px 14px;border-radius:6px;font-size:.84rem;font-weight:600;cursor:pointer;border:none;text-decoration:none;transition:all .15s;white-space:nowrap;font-family:inherit}
@@ -631,6 +632,7 @@ const fmtD=d=>{if(!d)return'-';const dt=new Date(d);if(isNaN(dt))return d;return
 const fmtDT=d=>{if(!d)return'-';const dt=new Date(d);if(isNaN(dt))return d;return dt.toLocaleString('en-IN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})};
 const fmtC=n=>'₹'+(parseFloat(n)||0).toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:2});
 const today=()=>new Date().toISOString().split('T')[0];
+const nextSessionStr=session=>{const m=(session||'').match(/^(\d{4})-(\d{4})$/);return m?`${+m[1]+1}-${+m[2]+1}`:session};
 const e=id=>document.getElementById(id);
 const esc=s=>(s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 function greeting(){const h=new Date().getHours();return h<12?'Good morning':h<17?'Good afternoon':'Good evening'}
@@ -872,7 +874,7 @@ function rStudents(){
     const b=balance(s.id);const paid=paidTotal(s.id);
     const sbadge={Active:'b-ok',Passed:'b-pri',Left:'b-gray'}[s.status]||'b-gray';
     return`<tr>
-      <td><div style="display:flex;align-items:center;gap:9px">${avatarEl(s)}<div><div class="fw7">${esc(s.name)}</div><div class="fs-sm tw-muted">${esc(s.id)}${s.admissionNo?' · '+esc(s.admissionNo):''}</div></div></div></td>
+      <td><div style="display:flex;align-items:center;gap:9px">${avatarEl(s)}<div><div class="fw7">${esc(s.name)}</div><div class="fs-sm tw-muted">${esc(s.id)}${s.admissionNo?' · '+esc(s.admissionNo):''}</div>${s.year==='Full Course (Both Years)'?`<span class="badge b-gold" style="margin-top:3px">${icon('check',10)} Full Course</span>`:''}</div></div></td>
       <td>${esc(s.course||'-')}</td><td>${esc(s.session||'-')}</td><td>${esc(s.mobile||'-')}</td>
       <td><span class="badge ${sbadge}">${s.status}</span></td>
       <td class="tw-ok fw7">${fmtC(paid)}</td>
@@ -1050,6 +1052,56 @@ async function svEditStu(origId){
   }catch(err){setBusy('stu-save-btn',false);showToast('Save failed: '+friendlySbError(err),'error')}
 }
 
+// ── Promote to Next Year ──
+// Fees ACCUMULATE onto the student's existing total rather than replacing it. Since the
+// balance is always (total fees so far − everything ever paid), any overpayment from 1st
+// year automatically reduces what shows as due in 2nd year — no separate credit tracking needed.
+function showPromoteModal(sid){
+  const s=gSt().find(x=>x.id===sid);if(!s)return;
+  const ns=nextSessionStr(s.session);
+  const fs=(gSe().feeStructures||[]).find(x=>x.course===s.course&&x.session===ns);
+  const suggested=fs?fs.year2Fee:0;
+  showModal('promo-modal',`
+    <div class="mh"><span class="mt">${icon('arrowRight',18)} Promote to Next Year</span><button class="bcl" onclick="closeM()">${icon('x',18)}</button></div>
+    <div class="mb2">
+      <div class="alert a-inf">${icon('bell',15)}<span><strong>${esc(s.name)}</strong> moves from <strong>1st Year, ${esc(s.session)}</strong> to <strong>2nd Year, ${esc(ns)}</strong>. Their payment history stays exactly as it is.</span></div>
+      <div class="fg"><label class="req">2nd Year Fee (₹)</label><input type="number" id="promo-fee" value="${suggested||''}" min="0" step="100" oninput="updatePromoPreview('${sid}')">
+        <p class="hint">${fs?`Filled in from your Fee Structure for ${esc(s.course)} · ${esc(ns)}.`:`No Fee Structure found for ${esc(s.course)} · ${esc(ns)} — enter the amount manually, or set one up in Settings first.`}</p>
+      </div>
+      <div class="fg"><label>Extra Discount for 2nd Year (₹)</label><input type="number" id="promo-disc" value="0" min="0" step="100" oninput="updatePromoPreview('${sid}')"></div>
+      <div class="alert a-ok" id="promo-preview" style="margin-top:4px"></div>
+      <div id="promo-err" class="alert a-err" style="display:none"></div>
+    </div>
+    <div class="mf"><button class="btn bo" onclick="closeM()">Cancel</button><button class="btn ba" id="promo-save-btn" onclick="doPromote('${sid}')">Promote</button></div>
+  `,'modal-sm');
+  updatePromoPreview(sid);
+}
+
+function updatePromoPreview(sid){
+  const s=gSt().find(x=>x.id===sid);if(!s)return;
+  const prev=e('promo-preview');if(!prev)return;
+  const addFee=parseFloat(e('promo-fee').value)||0,addDisc=parseFloat(e('promo-disc').value)||0;
+  const newTotal=(parseFloat(s.totalFees)||0)+addFee,newDiscount=(parseFloat(s.discount)||0)+addDisc;
+  const paid=paidTotal(sid);const newBalance=Math.max(0,newTotal-newDiscount-paid);
+  prev.innerHTML=`After promotion — Total Fees: <strong>${fmtC(newTotal)}</strong> · Already Paid (carried forward): <strong>${fmtC(paid)}</strong> · New Balance: <strong>${newBalance>0?fmtC(newBalance):'₹0 (fully covered)'}</strong>`;
+}
+
+async function doPromote(sid){
+  const s=gSt().find(x=>x.id===sid);if(!s)return;
+  const addFee=parseFloat(e('promo-fee').value)||0,addDisc=parseFloat(e('promo-disc').value)||0;
+  const er=e('promo-err');er.style.display='none';
+  if(addFee<=0){er.textContent='Please enter the 2nd year fee amount.';er.style.display='flex';return}
+  const ns=nextSessionStr(s.session);
+  const updated=Object.assign({},s,{year:'2nd Year',session:ns,totalFees:(parseFloat(s.totalFees)||0)+addFee,discount:(parseFloat(s.discount)||0)+addDisc});
+  setBusy('promo-save-btn',true);
+  try{
+    await dbUpdateStudent(sid,updated);
+    addLog('PROMOTE',`${s.name} promoted to 2nd Year, ${ns}`);
+    showToast(`${s.name} promoted to 2nd Year!`,'ok');
+    closeM();S.viewSid=sid;nav('student-detail');
+  }catch(err){setBusy('promo-save-btn',false);er.textContent=friendlySbError(err);er.style.display='flex'}
+}
+
 // ══════════════════════════════════════════════════════════════
 // STUDENT DETAIL
 // ══════════════════════════════════════════════════════════════
@@ -1088,10 +1140,11 @@ function rStudentDetail(){
               <span class="badge b-pri">${esc(s.id)}</span>
               ${s.admissionNo?`<span class="badge b-gray">ADM: ${esc(s.admissionNo)}</span>`:''}
               <span class="badge ${s.status==='Active'?'b-ok':s.status==='Passed'?'b-pri':'b-gray'}">${s.status}</span>
+              ${s.year==='Full Course (Both Years)'?`<span class="badge b-gold">${icon('check',11)} Full Course Paid Upfront</span>`:''}
             </div>
           </div>
           <div style="display:flex;gap:7px;flex-wrap:wrap">
-            ${S.user.role==='admin'?`<button class="btn bp btn-sm" onclick="S.prefSid='${s.id}';nav('add-payment')">${icon('plus',14)} Add Payment</button><button class="btn bo btn-sm" onclick="S.editSid='${s.id}';nav('edit-student')">${icon('edit',13)} Edit</button>`:''}
+            ${S.user.role==='admin'?`<button class="btn bp btn-sm" onclick="S.prefSid='${s.id}';nav('add-payment')">${icon('plus',14)} Add Payment</button>${(s.year==='1st Year'&&s.status==='Active')?`<button class="btn ba btn-sm" onclick="showPromoteModal('${s.id}')">${icon('arrowRight',13)} Promote to Next Year</button>`:''}<button class="btn bo btn-sm" onclick="S.editSid='${s.id}';nav('edit-student')">${icon('edit',13)} Edit</button>`:''}
             <button class="btn bo btn-sm" onclick="nav('students')">Back</button>
           </div>
         </div>
