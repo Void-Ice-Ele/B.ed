@@ -423,7 +423,6 @@ const S={
 const SUPABASE_URL='https://ofxyirtndxrbramngluq.supabase.co';
 const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9meHlpcnRuZHhyYnJhbW5nbHVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwNDU0OTYsImV4cCI6MjA5ODYyMTQ5Nn0.C5Cejrbb9ZBwZe0GbW-v9bk5mkTG1NgupvlKIbmdofA';
 
-
 function defaultSettings(){return{collegeName:'B.Ed College',address:'College Address, City, State - 000000',phone:'0000000000',email:'college@example.com',logo:null,currentSession:'2024-2025',affiliatedTo:'',regNo:'',feeStructures:[]}}
 
 // ══════════════════════════════════════════════════════════════
@@ -634,6 +633,10 @@ const fmtDT=d=>{if(!d)return'-';const dt=new Date(d);if(isNaN(dt))return d;retur
 const fmtC=n=>'₹'+(parseFloat(n)||0).toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:2});
 const today=()=>new Date().toISOString().split('T')[0];
 const nextSessionStr=session=>{const m=(session||'').match(/^(\d{4})-(\d{4})$/);return m?`${+m[1]+1}-${+m[2]+1}`:session};
+function rowToDetail(ev,sid){
+  if(ev.target.closest('.iconbar'))return; // let action buttons handle their own clicks
+  S.viewSid=sid;nav('student-detail');
+}
 const e=id=>document.getElementById(id);
 const esc=s=>(s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 function greeting(){const h=new Date().getHours();return h<12?'Good morning':h<17?'Good afternoon':'Good evening'}
@@ -874,7 +877,7 @@ function rStudents(){
   const rows=sts.map(s=>{
     const b=balance(s.id);const paid=paidTotal(s.id);
     const sbadge={Active:'b-ok',Passed:'b-pri',Left:'b-gray'}[s.status]||'b-gray';
-    return`<tr>
+    return`<tr onclick="rowToDetail(event,'${s.id}')" style="cursor:pointer">
       <td><div style="display:flex;align-items:center;gap:9px">${avatarEl(s)}<div><div class="fw7">${esc(s.name)}</div><div class="fs-sm tw-muted">${esc(s.id)}${s.admissionNo?' · '+esc(s.admissionNo):''}</div>${s.year==='Full Course (Both Years)'?`<span class="badge b-gold" style="margin-top:3px">${icon('check',10)} Full Course</span>`:''}</div></div></td>
       <td>${esc(s.course||'-')}</td><td>${esc(s.session||'-')}</td><td>${esc(s.mobile||'-')}</td>
       <td><span class="badge ${sbadge}">${s.status}</span></td>
@@ -986,13 +989,66 @@ function rAddStudent(data){
       <div class="fg"><label class="req">Total Fees (₹)</label><input type="number" id="f-fees" value="${d.totalFees||''}" min="0" step="100">${!isEd?`<p class="hint" id="fee-auto-hint" style="display:none"></p>`:''}</div>
       <div class="fg"><label>Discount / Concession (₹)</label><input type="number" id="f-disc" value="${d.discount||''}" min="0" step="100"></div>
     </div>
+    ${!isEd?`
+    <hr class="divider">
+    <div class="fg">
+      <label>Amount Paid Now (₹) <span style="font-weight:400;color:var(--muted)">— optional, leave blank if nothing collected yet</span></label>
+      <input type="number" id="reg-pay-amt" min="0" step="100" placeholder="0" oninput="toggleRegPaySection()">
+    </div>
+    <div id="reg-pay-section" style="display:none">
+      <div class="fr">
+        <div class="fg"><label>Fee Head</label><select id="reg-pay-fh">${FHEADS.map(h=>`<option ${h==='Admission Fee'?'selected':''}>${h}</option>`).join('')}</select></div>
+        <div class="fg"><label>Collected By</label><input type="text" id="reg-pay-by" value="${esc((S.user&&S.user.name)||'')}"></div>
+      </div>
+      <div class="fg">
+        <label class="req">Payment Mode</label>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
+          ${PMODES.map((m,i)=>`<label class="check-row${i===0?' sel':''}" id="reg-ml-${m.replace(' ','-')}" onclick="selRegMode('${m}')">
+            <input type="radio" name="regpymode" value="${m}" ${i===0?'checked':''} style="width:auto;margin:0" onchange="onRegModeChg()">
+            ${m}
+          </label>`).join('')}
+        </div>
+      </div>
+      <div id="reg-pay-extra"></div>
+      <div class="fg"><label>Remarks for this payment</label><input type="text" id="reg-pay-rem" placeholder="Optional"></div>
+    </div>`:''}
     <div class="fg"><label>Remarks / Notes</label><textarea id="f-rem" style="min-height:55px">${esc(d.remarks||'')}</textarea></div>
     <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:6px">
       <button class="btn bo" onclick="nav('students')">Cancel</button>
       <button class="btn bp" id="stu-save-btn" onclick="${isEd?`svEditStu('${d.id}')`:'svNewStu()'}">${isEd?'Save Changes':'Add Student'}</button>
     </div>
   </div></div></div>`;
-  if(!isEd)onFeeCtxChange();
+  if(!isEd){onFeeCtxChange();onRegModeChg()}
+}
+
+function toggleRegPaySection(){
+  const amt=parseFloat(e('reg-pay-amt').value)||0;
+  const sec=e('reg-pay-section');if(sec)sec.style.display=amt>0?'block':'none';
+}
+function selRegMode(m){
+  PMODES.forEach(x=>{const lbl=e('reg-ml-'+x.replace(' ','-'));if(lbl){lbl.classList.toggle('sel',x===m);lbl.querySelector('input').checked=(x===m)}});
+  onRegModeChg();
+}
+function onRegModeChg(){
+  const sel=document.querySelector('input[name="regpymode"]:checked');const m=sel?sel.value:'Cash';
+  const ex=e('reg-pay-extra');if(!ex)return;
+  if(m==='Cash'){
+    ex.innerHTML=`<div class="fr">
+      <div class="fg"><label class="req">Received By (Name)</label><input type="text" id="reg-pay-towho" value="${esc((S.user&&S.user.name)||'')}" placeholder="Who physically received the cash?"></div>
+      <div class="fg"><label>Change Returned (₹)</label><input type="number" id="reg-pay-chng" placeholder="0 if none" min="0"></div>
+    </div>`;
+  }else{
+    const lb={'UPI':'UPI Transaction ID','Bank Transfer':'Bank Txn / NEFT / IMPS Reference No','Cheque':'Cheque Number'}[m]||'Transaction ID';
+    const ph={'UPI':'e.g. UPI123456789012','Bank Transfer':'e.g. NEFT/IMPS reference no','Cheque':'e.g. 001234'}[m]||'Enter ID';
+    ex.innerHTML=`<div class="fg"><label class="req">${lb}</label>
+      <input type="text" id="reg-pay-txn" placeholder="${ph}" onblur="chkRegTxn(this)" oninput="e('reg-txn-err').style.display='none';this.classList.remove('err')">
+      <div id="reg-txn-err" class="emsg" style="display:none">${icon('alert',13)} This transaction ID is already used in another payment! Please verify.</div>
+    </div>`;
+  }
+}
+function chkRegTxn(inp){
+  const v=inp.value.trim();const er=e('reg-txn-err');if(!er)return;
+  if(v&&txnUsed(v)){inp.classList.add('err');er.style.display='flex'}else{inp.classList.remove('err');er.style.display='none'}
 }
 
 // Looks up a configured fee-structure price for the selected Course + Session + Year and
@@ -1035,11 +1091,48 @@ async function svNewStu(){
   const sts=gSt();
   if(sts.find(s=>s.id===d.id)){showToast('Student ID already exists.','error');return}
   if(d.admissionNo&&sts.find(s=>s.admissionNo===d.admissionNo)){showToast('Admission Number already exists.','error');return}
+
+  // Validate the optional "paid now" section BEFORE creating anything, so a mistake there
+  // doesn't leave the student half-registered.
+  const amt=parseFloat((e('reg-pay-amt')&&e('reg-pay-amt').value)||0)||0;
+  let payDraft=null;
+  if(amt>0){
+    const selm=document.querySelector('input[name="regpymode"]:checked');const mode=selm?selm.value:'Cash';
+    const by=((e('reg-pay-by')&&e('reg-pay-by').value)||'').trim();
+    if(!by){showToast('Please enter who collected the initial payment.','error');return}
+    let txn='',toWho='',chng=0;
+    if(mode==='Cash'){
+      toWho=((e('reg-pay-towho')&&e('reg-pay-towho').value)||'').trim();
+      if(!toWho){showToast('Please enter who received the cash.','error');return}
+      chng=parseFloat((e('reg-pay-chng')&&e('reg-pay-chng').value)||0)||0;
+    }else{
+      txn=((e('reg-pay-txn')&&e('reg-pay-txn').value)||'').trim();
+      if(!txn){showToast('Please enter the transaction ID for the initial payment.','error');return}
+      if(txnUsed(txn)){showToast('This transaction ID already exists. Please check and re-enter.','error');return}
+    }
+    payDraft={amount:amt,feeHead:(e('reg-pay-fh')&&e('reg-pay-fh').value)||'Admission Fee',mode,by,txn,toWho,chng,remarks:((e('reg-pay-rem')&&e('reg-pay-rem').value)||'').trim()};
+  }
+
   setBusy('stu-save-btn',true);
   try{
     await dbAddStudent(d);addLog('ADD_STU',`Added ${d.name} (${d.id})`);
-    showToast(`Student "${d.name}" added successfully!`,'ok');nav('students');
-  }catch(err){setBusy('stu-save-btn',false);showToast('Save failed: '+friendlySbError(err),'error')}
+  }catch(err){setBusy('stu-save-btn',false);showToast('Save failed: '+friendlySbError(err),'error');return}
+
+  if(!payDraft){
+    showToast(`Student "${d.name}" added successfully!`,'ok');nav('students');return;
+  }
+
+  const rno=nextRcp();const pid=nextId('PAY');
+  const pay={id:pid,receiptNo:rno,studentId:d.id,studentName:d.name,paymentDate:today(),amount:payDraft.amount,feeHead:payDraft.feeHead,installment:'1st Installment',paymentMode:payDraft.mode,transactionId:payDraft.txn,toWhom:payDraft.toWho,changeReturned:payDraft.chng,collectedBy:payDraft.by,session:d.session,remarks:payDraft.remarks,createdAt:new Date().toISOString(),createdBy:(S.user&&S.user.name)||''};
+  try{
+    await dbAddPayment(pay);addLog('ADD_PAY',`${rno} for ${d.name} – ${fmtC(payDraft.amount)} (at registration)`);
+    showToast(`Student added and payment of ${fmtC(payDraft.amount)} recorded!`,'ok');
+    nav('students');setTimeout(()=>viewRcp(pid),150);
+  }catch(err){
+    setBusy('stu-save-btn',false);
+    showToast(`Student added, but the payment could not be saved: ${friendlySbError(err)}. You can add it from the student's profile.`,'error',7000);
+    S.viewSid=d.id;nav('student-detail');
+  }
 }
 
 async function svEditStu(origId){
@@ -1600,8 +1693,9 @@ function rUsers(){
     </div></td>
   </tr>`}).join('');
   e('pc').innerHTML=`
-  <div class="sh"><span class="st">User Management</span></div>
-  <div class="alert a-inf">${icon('bell',15)}<span>To add someone new, create them in Supabase under <strong>Authentication → Users → Add User</strong> (tick <strong>Auto Confirm User</strong>) and give them that email + password. The first time they log into this app, they'll show up below automatically — approve them here if they're not an admin already.</span></div>
+  <div class="sh"><span class="st">User Management</span><button class="btn bo btn-sm" id="users-refresh-btn" onclick="refreshUsers()">${icon('refresh',13)} Refresh</button></div>
+  <div class="alert a-warn">${icon('alert',15)}<span><strong>Important:</strong> creating someone in Supabase's Authentication page does NOT make them appear here yet. They only show up the first time they actually log into this app with that email + password. If you just created someone and don't see them, ask them to try logging in, then click <strong>Refresh</strong> above (this list is a snapshot from when you last logged in, so it won't update by itself).</span></div>
+  <div class="alert a-inf">${icon('bell',15)}<span>To add someone new: Supabase → <strong>Authentication → Users → Add User</strong> (tick <strong>Auto Confirm User</strong>), then give them that email + password. Once they log in, approve them here if they're not an admin already.</span></div>
   <div class="card" style="margin-bottom:16px"><div class="tw"><table><thead><tr><th>User</th><th>Role</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead><tbody>${rows||noData(5)}</tbody></table></div></div>
   <div class="card"><div class="ch"><span class="ct">How access works</span></div><div class="cb">
     <div class="g2">
@@ -1610,6 +1704,18 @@ function rUsers(){
     </div>
     <div class="alert a-inf" style="margin-top:14px;margin-bottom:0">${icon('bell',15)}<span>These rules are enforced by the database itself, not just this screen — so they hold even if someone tries to access the data directly. The very first person ever to log in becomes admin automatically; everyone after that starts as <strong>Pending Approval</strong> until you approve them here, even though you created their login yourself in Supabase.</span></div>
   </div></div>`;
+}
+
+async function refreshUsers(){
+  setBusy('users-refresh-btn',true,'Refreshing...');
+  try{
+    const{data,error}=await sbClient.from('profiles').select('*');
+    if(error)throw error;
+    DB.users=(data||[]).map(fromSbProfile);
+    showToast('User list refreshed.','ok');
+  }catch(err){showToast('Refresh failed: '+friendlySbError(err),'error')}
+  setBusy('users-refresh-btn',false);
+  rUsers();
 }
 
 async function approveUser(uid){
